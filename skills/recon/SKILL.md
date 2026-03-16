@@ -97,7 +97,7 @@ Read **remaining** files in main context (some already read from Phase 2 kickoff
 - Is the primary spec or todo
 - Modified in the last 7 days
 
-**Budget: up to 20,000 tokens** for deep reads. If qualifying files exceed this, prioritize: primary spec > primary todo > files with discrepancies > recently modified.
+**Budget: up to 25,000 tokens** for deep reads. If qualifying files exceed this, prioritize: primary spec > primary todo > files with discrepancies > recently modified.
 
 ---
 

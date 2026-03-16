@@ -16,6 +16,7 @@ scripts/          # Dev tooling (validate, stats, link)
 - `npm run stats` — Word counts, token estimates, section counts for all skills
 - `npm run link` — Symlink skills into ~/.claude/skills/ for local testing
 - `npm run unlink` — Remove symlinks
+- `npm run create -- <skill-name> ["description"]` — Scaffold a new skill with valid frontmatter
 
 ## Skill Development Workflow
 

@@ -15,8 +15,6 @@
   "files": [
     "skills/",
     ".claude-plugin/",
-    "agents/",
-    "hooks/",
     "LICENSE"
   ],
   "scripts": {

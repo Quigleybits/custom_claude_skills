@@ -40,7 +40,7 @@ LICENSE              # MIT
 
 ## Current Skills
 
-- **recon** — Full-spectrum project reconnaissance and doc health audit (975 words, ~1700 tokens, 0 validation errors)
+- **recon** — Full-spectrum project reconnaissance and doc health audit (1022 words, ~1700 tokens, 0 validation errors)
 
 ## What Is Not Set Up
 

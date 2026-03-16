@@ -15,3 +15,4 @@
 - [ ] Token budget planner (select which skills fit within a budget)
 - [ ] Skill conflict detection (find contradictions between skills)
 - [ ] CI/CD pipeline for automated validation on push
+- [ ] Selective skill installer CLI (`npx @quigleybits/claude-skills install recon`) — lets users pick individual skills instead of installing all

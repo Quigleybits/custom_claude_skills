@@ -39,7 +39,7 @@ digraph recon {
 - `.claude/**/*.md`, `**/CLAUDE.md`
 - `*.rst`, `*.adoc` (secondary — include if found, don't prioritize over .md)
 
-**Git context:** Run `git log --oneline -15` to understand recent activity. Note which areas of the codebase are actively changing — this informs priority in Phase 4.
+**Git context:** Run `git log --oneline -15` and `git branch --show-current` to understand recent activity and the active branch. Both inform priority in Phase 4.
 
 **Extended scan (only if above yields < 5 files):**
 - `**/*.md` excluding `node_modules`, `.git`, `vendor`, `dist`, `build`
@@ -75,9 +75,15 @@ Recon scout. For EACH file:
 4. Codebase reality check: Glob/Grep to verify paths, files, features
    mentioned in the doc actually exist. Note discrepancies.
 
-IMPORTANT: Only reality-check DESCRIPTIVE docs (README, CLAUDE.md, specs,
-status, todos). Skip PRESCRIPTIVE content (instructions, templates, code
-blocks, files under skills/) — these describe behavior, not current state.
+IMPORTANT:
+- Only reality-check DESCRIPTIVE docs (README, CLAUDE.md, specs, status,
+  todos). Skip PRESCRIPTIVE content (instructions, templates, code blocks,
+  files under skills/) — these describe behavior, not current state.
+- When interpreting structured data (CSV, TSV, results files), flag values
+  as approximate if you're unsure about column semantics (e.g. status,
+  keep/discard filters). Don't assert "best" or "latest" without verifying
+  you understand the schema.
+- Aim for 3-5 tool calls per file. Don't exceed ~30 tool calls total.
 
 Return findings as a structured list, one entry per file.
 Files to scan: [LIST]

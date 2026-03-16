@@ -25,6 +25,7 @@ scripts/          # Dev tooling (validate, stats, link)
 3. Run `npm run link` to install locally for testing
 4. Test the skill with `/skill-name` in Claude Code
 5. Run `npm run stats` to check token budget
+6. Commit changes before and after each edit (preserve git history)
 
 ## Skill Format Rules
 

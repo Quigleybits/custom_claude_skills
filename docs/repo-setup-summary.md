@@ -25,6 +25,7 @@ LICENSE              # MIT
 | `npm run stats` | Shows word count, line count, estimated tokens, section count per skill — for monitoring token budget |
 | `npm run link` | Creates Windows junction symlinks from skills/* into ~/.claude/skills/ so Claude Code picks them up immediately |
 | `npm run unlink` | Removes those symlinks |
+| `npm run create` | Scaffolds a new skill directory with valid frontmatter, runs validation after creation |
 
 ## Workflow — Create / Test / Iterate / Publish
 
@@ -40,11 +41,10 @@ LICENSE              # MIT
 
 ## Current Skills
 
-- **recon** — Full-spectrum project reconnaissance and doc health audit (1022 words, ~1700 tokens, 0 validation errors)
+- **recon** — Full-spectrum project reconnaissance and doc health audit (1413 words, ~2397 tokens, 0 validation errors)
 
 ## What Is Not Set Up
 
 - No external dependencies (no npm install needed)
 - No test framework (skill testing uses subagent pressure scenarios per superpowers TDD methodology)
 - No CI/CD pipeline
-- No GitHub remote yet

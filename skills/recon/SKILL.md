@@ -101,6 +101,8 @@ Read **remaining** files in main context (some already read from Phase 2 kickoff
 - Is the primary spec or todo
 - Modified in the last 7 days
 
+**Verify scout claims:** While reading, cross-check any specific values scouts reported (counts, metrics, status labels, "best" results). Scouts use a smaller model and may misinterpret data. Flag corrections in Phase 4.
+
 **Budget: up to 25,000 tokens** for deep reads. If qualifying files exceed this, prioritize: primary spec > primary todo > files with discrepancies > recently modified.
 
 ---

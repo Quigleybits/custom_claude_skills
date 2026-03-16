@@ -1,0 +1,33 @@
+{
+  "name": "@quigleybits/claude-skills",
+  "version": "0.1.0",
+  "description": "Custom Claude Code skills: recon, and more",
+  "author": "quigleyBits",
+  "license": "MIT",
+  "keywords": [
+    "claude-code",
+    "skills",
+    "slash-commands",
+    "ai-agents",
+    "recon",
+    "project-reconnaissance"
+  ],
+  "files": [
+    "skills/",
+    ".claude-plugin/",
+    "agents/",
+    "hooks/",
+    "LICENSE"
+  ],
+  "scripts": {
+    "validate": "node scripts/validate-skills.mjs",
+    "stats": "node scripts/skill-stats.mjs",
+    "link": "node scripts/link-skills.mjs",
+    "unlink": "node scripts/link-skills.mjs --unlink",
+    "create": "node scripts/create-skill.mjs"
+  },
+  "repository": {
+    "type": "git",
+    "url": ""
+  }
+}

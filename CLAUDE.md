@@ -6,7 +6,8 @@ This repo develops, tests, and publishes custom Claude Code skills (slash comman
 
 ```
 skills/           # Each subdirectory is a skill (contains SKILL.md)
-scripts/          # Dev tooling (validate, stats, link)
+scripts/          # Dev tooling (validate, stats, link, create)
+docs/             # Project documentation
 .claude-plugin/   # Plugin metadata for Claude marketplace
 ```
 

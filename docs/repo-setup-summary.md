@@ -26,6 +26,8 @@ LICENSE              # MIT
 | `npm run link` | Creates Windows junction symlinks from skills/* into ~/.claude/skills/ so Claude Code picks them up immediately |
 | `npm run unlink` | Removes those symlinks |
 | `npm run create` | Scaffolds a new skill directory with valid frontmatter, runs validation after creation |
+| `postinstall` | Automatically symlinks skills into ~/.claude/skills/ on `npm install -g` |
+| `preuninstall` | Removes symlinks on `npm uninstall -g` |
 
 ## Workflow — Create / Test / Iterate / Publish
 
@@ -41,7 +43,7 @@ LICENSE              # MIT
 
 ## Current Skills
 
-- **recon** — Full-spectrum project reconnaissance and doc health audit (1413 words, ~2397 tokens, 0 validation errors)
+- **recon** — Full-spectrum project reconnaissance and doc health audit (987 words, ~1776 tokens, 0 validation errors)
 
 ## What Is Not Set Up
 

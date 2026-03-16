@@ -7,7 +7,7 @@
 - [x] Refine recon category definitions (Prompt/Context/Intent/Specification/Task Engineering) — research best practices, come up with concise high-signal definitions that work across AI-focused and standard codebases
 - [ ] Skill evaluation & trigger testing framework — `eval-set.json` per skill with test queries and `should_trigger` flags, `npm run eval` to verify activation and output quality
 - [x] Set up GitHub remote and push repo
-- [ ] npm postinstall hook so `npm install @quigleybits/claude-skills` auto-links skills into `~/.claude/skills/`
+- [x] npm postinstall hook so `npm install @quigleybits/claude-skills` auto-links skills into `~/.claude/skills/`
 
 ## Later
 - [ ] Cross-platform export script (`npm run export -- --target cursor,codex,aider`) — converts SKILL.md to other AI tool formats

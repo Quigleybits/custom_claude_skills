@@ -1,24 +1,33 @@
 #!/usr/bin/env node
 /**
- * Symlinks skills from this repo into ~/.claude/skills/ for local testing.
+ * Symlinks skills into ~/.claude/skills/ for Claude Code.
+ * Used both for local dev and as npm postinstall/preuninstall hook.
+ *
  * Usage:
  *   node scripts/link-skills.mjs          # Link all skills
  *   node scripts/link-skills.mjs --unlink # Remove symlinks
+ *   node scripts/link-skills.mjs --quiet  # Suppress non-error output (for postinstall)
  */
-import { readdir, symlink, unlink, stat, readlink } from 'node:fs/promises';
+import { readdir, symlink, unlink, stat, readlink, mkdir } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { homedir } from 'node:os';
 
 const SKILLS_DIR = resolve(import.meta.dirname, '..', 'skills');
 const CLAUDE_SKILLS = join(homedir(), '.claude', 'skills');
 const isUnlink = process.argv.includes('--unlink');
+const isQuiet = process.argv.includes('--quiet');
+
+function log(msg) { if (!isQuiet) console.log(msg); }
 
 async function main() {
+  // Ensure ~/.claude/skills/ exists
+  await mkdir(CLAUDE_SKILLS, { recursive: true });
+
   let dirs;
   try {
     dirs = await readdir(SKILLS_DIR, { withFileTypes: true });
   } catch {
-    console.error(`Skills directory not found: ${SKILLS_DIR}`);
+    if (!isQuiet) console.error(`Skills directory not found: ${SKILLS_DIR}`);
     process.exit(1);
   }
 
@@ -33,29 +42,29 @@ async function main() {
         const linkTarget = await readlink(target);
         if (resolve(linkTarget) === resolve(source)) {
           await unlink(target);
-          console.log(`Unlinked: ${dir.name}`);
+          log(`Unlinked: ${dir.name}`);
         } else {
-          console.log(`Skipped: ${dir.name} (not our symlink)`);
+          log(`Skipped: ${dir.name} (not our symlink)`);
         }
       } catch {
-        console.log(`Skipped: ${dir.name} (not found)`);
+        log(`Skipped: ${dir.name} (not found)`);
       }
     } else {
       try {
-        const existing = await stat(target);
+        await stat(target);
         // Check if it's already a symlink to us
         try {
           const linkTarget = await readlink(target);
           if (resolve(linkTarget) === resolve(source)) {
-            console.log(`Already linked: ${dir.name}`);
+            log(`Already linked: ${dir.name}`);
             continue;
           }
         } catch { /* not a symlink */ }
-        console.log(`Skipped: ${dir.name} (already exists at target — remove manually or use a different name)`);
+        log(`Skipped: ${dir.name} (already exists — remove manually or use a different name)`);
       } catch {
         // Target doesn't exist, safe to link
         await symlink(source, target, 'junction');
-        console.log(`Linked: ${dir.name} -> ${target}`);
+        log(`Linked: ${dir.name} -> ${target}`);
       }
     }
   }

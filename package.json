@@ -14,6 +14,7 @@
   ],
   "files": [
     "skills/",
+    "scripts/link-skills.mjs",
     ".claude-plugin/",
     "LICENSE"
   ],
@@ -22,7 +23,9 @@
     "stats": "node scripts/skill-stats.mjs",
     "link": "node scripts/link-skills.mjs",
     "unlink": "node scripts/link-skills.mjs --unlink",
-    "create": "node scripts/create-skill.mjs"
+    "create": "node scripts/create-skill.mjs",
+    "postinstall": "node scripts/link-skills.mjs --quiet",
+    "preuninstall": "node scripts/link-skills.mjs --unlink --quiet"
   },
   "repository": {
     "type": "git",

@@ -131,7 +131,7 @@ Check which of the 5 categories have **zero files**. For each gap:
 3. Propose a concrete file with 1-2 sentence description
 4. Ask the user: "Want me to create any of these?"
 
-If agreed, create files with **real content from this recon session** — never placeholders.
+**Wait for user response before proceeding to Phase 5.** If agreed, create the files with **real content from this recon session** — never placeholders. Then continue to Phase 5. If declined, proceed directly to Phase 5. Do not silently skip this prompt.
 
 ---
 

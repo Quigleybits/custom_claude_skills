@@ -5,25 +5,24 @@ description: "Use when starting work on a project, resuming after a break, onboa
 
 # Recon
 
-Full-spectrum project reconnaissance. Reads all documentation (specs, todos, context, intent, prompt/specification engineering), verifies claims against the actual codebase, audits doc health, and presents prioritized next steps.
+Full-spectrum project reconnaissance. Scans documentation, cross-references claims against the codebase, audits doc health, and presents prioritized next steps.
 
-**Always runs the full pipeline. No sub-modes.**
+**Always runs the full pipeline.**
 
 ## Execution Flow
 
 ```dot
 digraph recon {
-    rankdir=TB;
-    node [shape=box];
-    "Phase 1: Discover docs\n(layers 1-3 parallel)" -> "≤ 10 files?" [shape=diamond];
+    rankdir=TB; node [shape=box];
+    "Phase 1: Discover\n(parallel)" -> "≤ 10 files?" [shape=diamond];
     "≤ 10 files?" -> "Read all directly" [label="yes"];
-    "≤ 10 files?" -> "Phase 2: Scouts + obvious reads\n(parallel)" [label="no"];
-    "Phase 2: Scouts + obvious reads\n(parallel)" -> "Phase 3: Remaining deep reads";
-    "Read all directly" -> "Phase 4: Synthesize + next steps";
-    "Phase 3: Remaining deep reads" -> "Phase 4: Synthesize + next steps";
-    "Phase 4: Synthesize + next steps" -> "Phase 4b: Missing category analysis";
-    "Phase 4b: Missing category analysis" -> "Phase 5: Doc health audit";
-    "Phase 5: Doc health audit" -> "Present to user" [shape=doublecircle];
+    "≤ 10 files?" -> "Phase 2: Scouts + reads\n(parallel)" [label="no"];
+    "Phase 2: Scouts + reads\n(parallel)" -> "Phase 3: Remaining reads";
+    "Read all directly" -> "Phase 4: Synthesize";
+    "Phase 3: Remaining reads" -> "Phase 4: Synthesize";
+    "Phase 4: Synthesize" -> "Phase 4b: Gap analysis";
+    "Phase 4b: Gap analysis" -> "Phase 5: Doc health";
+    "Phase 5: Doc health" -> "Present to user" [shape=doublecircle];
 }
 ```
 
@@ -31,200 +30,140 @@ digraph recon {
 
 ## Phase 1: Discover Docs
 
-Find all documentation files. **Run Layers 1-3 in parallel** (they are independent sources), then combine results.
+**Run all three sources in parallel** (single message, multiple tool calls), then combine and deduplicate.
 
-**Layer 1 — Explicit config:**
-Check CLAUDE.md for a `## Recon Files` or `## Spec Files` section. If found, use that list as primary source.
+**Memory:** Read MEMORY.md and memory files in the project's auto-memory directory.
 
-**Layer 2 — Memory:**
-Read MEMORY.md and memory files in the project's auto-memory directory.
+**Convention scan:** Glob for:
+- `*.md`, `docs/**/*.md`, `specs/**/*.md`, `plans/**/*.md`
+- `.claude/**/*.md`, `**/CLAUDE.md`
+- `*.rst`, `*.adoc` (secondary — include if found, don't prioritize over .md)
 
-**Layer 3 — Convention scan:**
-Glob for:
-- Root: `*.md` (spec.md, todo.md, status.md, dev_notes.md, README.md, etc.)
-- `docs/**/*.md`, `specs/**/*.md`, `plans/**/*.md`
-- `.claude/**/*.md` (skills, memory)
-- `CLAUDE.md` at any depth
+**Git context:** Run `git log --oneline -15` to understand recent activity. Note which areas of the codebase are actively changing — this informs priority in Phase 4.
 
-All three layers run as parallel tool calls in a single message. Combine their results, deduplicate.
+**Extended scan (only if above yields < 5 files):**
+- `**/*.md` excluding `node_modules`, `.git`, `vendor`, `dist`, `build`
+- Cap at 50 files, prioritize by most recently modified
 
-**Layer 4 — Extended scan (only if Layers 1-3 combined yield < 5 files):**
-- `**/*.md` excluding `node_modules`, `.git`, `vendor`, `dist`, `build`, `CHANGELOG.md`
-- Cap at 50 files; prioritize by most recently modified
-
-**Categorize every file into one or more categories:**
+**Categorize every file:**
 
 | Category | Signal words / paths | Covers |
 |----------|---------------------|--------|
 | **Prompt Engineering** | `CLAUDE.md`, `AGENTS.md`, `GEMINI.md`, `.claude/`, skills, hooks | AI agent instructions, prompt optimization |
 | **Context Engineering** | `status`, `handoff`, `context`, `memory`, `dev_notes`, `MEMORY.md` | Project state, session continuity |
-| **Intent Engineering** | `overview`, `vision`, `goals`, `why`, `purpose`, `intent`, spec preamble | Why we're building, success criteria |
-| **Specification Engineering** | `spec`, `design`, `plan`, `architecture`, `RFC`, `ADR`, `docs/plans/` | What to build, how, standards |
+| **Intent Engineering** | `overview`, `vision`, `goals`, `why`, `purpose`, `intent` | Why we're building, success criteria |
+| **Specification Engineering** | `spec`, `design`, `plan`, `architecture`, `RFC`, `ADR` | What to build, how, standards |
 | **Task Engineering** | `todo`, `tasks`, `backlog`, `roadmap`, `issues`, `decisions` | What's next, priorities, blockers |
+
+> **Note:** These category definitions are provisional and under refinement. Use your best judgment when a file doesn't clearly fit.
 
 ---
 
 ## Phase 2: Scan Docs
 
-**Small-repo shortcut (≤ 10 doc files total):** Skip subagents entirely. Read all files directly in main context and proceed to Phase 3 (which becomes a no-op since everything is already read). This avoids subagent overhead when the files would fit comfortably in context anyway.
+**≤ 10 files:** Read all directly in main context. Skip to Phase 4.
 
-**Large-repo path (> 10 doc files):** Dispatch parallel subagents with these rules:
+**> 10 files:** Dispatch parallel subagents with these rules:
 
-**Subagent merging:** Do not spawn a subagent for a category with fewer than 3 files. Merge small categories into a single combined scout. Aim for the fewest subagents that cover all files — typically 2-4 scouts, not 5.
+- **Merge small categories** — don't spawn a scout for <3 files. Combine into fewer scouts (aim for 2-4 total).
+- **Parallel deep-read kickoff** — in the same message as scout dispatch, also Read the primary todo, primary spec, and any file modified in the last 24 hours. This overlaps scout wait time with useful reads.
 
-**Parallel deep-read kickoff:** While dispatching scouts, also start reading **obvious Phase 3 candidates** directly in main context in the same message: the primary todo file, the primary spec, and any file modified in the last 24 hours. This overlaps scout wait time with useful reads. Scout results then augment what you already know rather than being a prerequisite.
-
-Each subagent (Explore type) receives its file list and these instructions:
-
+Scout instructions (Explore type):
 ```
-You are a recon scout for project documentation.
+Recon scout. For EACH file:
+1. Summary (3-5 lines): contents and current state
+2. Staleness signals: outdated dates, status labels, claims
+3. Overlap: content duplicated in other files
+4. Codebase reality check: Glob/Grep to verify paths, files, features
+   mentioned in the doc actually exist. Note discrepancies.
 
-For EACH file in your list:
-1. **Summary** (3-5 lines): What this file contains and its current state
-2. **Staleness signals**: Dates, status labels, or claims that appear outdated
-3. **Overlap**: Content duplicated in other files you've read
-4. **Codebase reality check**: Use Glob and Grep to verify that files, pages,
-   features, and paths mentioned in the doc actually exist. Note discrepancies.
+IMPORTANT: Only reality-check DESCRIPTIVE docs (README, CLAUDE.md, specs,
+status, todos). Skip PRESCRIPTIVE content (instructions, templates, code
+blocks, files under skills/) — these describe behavior, not current state.
 
-IMPORTANT — Prescriptive vs descriptive content:
-- **Prescriptive content** (instructions, templates, examples, code blocks,
-  files under skills/) tells agents what to DO. Do NOT reality-check these
-  against the current codebase — they describe behavior for target repos,
-  not claims about this one.
-- **Descriptive content** (README, CLAUDE.md, spec files, status files, todo
-  items) makes claims about the current project. Reality-check ONLY these.
-
-Return findings as a structured list, one entry per file.
 Files to scan: [LIST]
 ```
-
-Collect all subagent reports before proceeding.
 
 ---
 
 ## Phase 3: Selective Deep Read
 
-Based on subagent summaries, select **remaining** files for full reading in main context (some may already be read from the parallel kickoff in Phase 2).
+Read **remaining** files in main context (some already read from Phase 2 kickoff).
 
-**Read fully if any apply (and not already read):**
-- File has staleness signals needing assessment
-- File contains task lists or next steps
-- File is the primary spec or primary todo
-- File has codebase discrepancies needing evaluation
-- File was modified in the last 7 days
+**Read if (and not already read):**
+- Has staleness signals or codebase discrepancies
+- Contains task lists or next steps
+- Is the primary spec or todo
+- Modified in the last 7 days
 
-**Context budget:**
-- Use the full **5% of context** for deep reads — don't skimp, this is a small price for better repo understanding
-- If more files need reading, expand up to **15% total** — but never exceed this
-- If all qualifying files would exceed 15%, use the remaining budget (above the initial 5%) to read subagent summaries plus the highest-priority files (primary spec, primary todo, files with codebase discrepancies first)
-
-Use the Read tool directly — do NOT dispatch subagents for this phase.
+**Budget: up to 20,000 tokens** for deep reads. If qualifying files exceed this, prioritize: primary spec > primary todo > files with discrepancies > recently modified.
 
 ---
 
-## Phase 4: Synthesize & Present Next Steps
+## Phase 4: Synthesize & Present
 
-Cross-reference all findings (subagent summaries + deep reads + memory). Think about how the different aspects relate to each other. Then produce:
+Cross-reference all findings (summaries + deep reads + memory + git log). Produce:
 
 ```markdown
 ## Project Recon — [Date]
 
-### Current State Summary
-[2-3 sentences on where the project stands]
+### Current State
+[2-3 sentences — where the project stands, informed by git activity]
 
-### Next Steps by Category
-
-#### Critical (do first)
-1. [P1] **[Category]** — [Task description]
-2. [P2] **[Category]** — [Task description]
-
-#### Important (do soon)
-3. [P3] **[Category]** — [Task description]
-
-#### Normal (when ready)
-4. [P4] **[Category]** — [Task description]
-
+### Next Steps
+#### Critical (blockers, broken things)
+#### Important (unblocks other work)
+#### Normal (independent improvements)
 #### Low (backlog)
-5. [P5] **[Category]** — [Task description]
+
+Each item: [P#] **[Category]** — [Description]
 
 ### Key Findings
-- [Notable insight from cross-referencing docs]
-- [Discrepancy between docs and codebase]
-- [Non-obvious relationship between items]
+- [Cross-reference insight]
+- [Doc vs codebase discrepancy]
+- [Non-obvious relationship]
 ```
 
-**Priority rules:**
-- Blockers / broken things -> Critical
-- Tasks that unblock others -> Important
-- Independent improvements -> Normal
-- Nice-to-haves / future work -> Low
+### Gap Analysis
 
-### Missing Category Analysis
+Check which of the 5 categories have **zero files**. For each gap:
+1. Name it
+2. Explain why it matters *for this specific project* (not generic advice)
+3. Propose a concrete file with 1-2 sentence description
+4. Ask the user: "Want me to create any of these?"
 
-After synthesis, check which of the 5 categories (Prompt, Context, Intent, Specification, Task Engineering) have **zero files**. For each empty category:
-
-1. **Name the gap** — which category is missing
-2. **Explain why it matters** — specific to this codebase, not generic advice. Use what you learned from recon to explain what value the file would add here.
-3. **Propose a file** — suggest a concrete filename and 1-2 sentence description of what it would contain
-4. **Ask the user** — present all missing categories together and ask: "Want me to create any of these?"
-
-If the user agrees, create the files using:
-- Findings from this recon session (you already have the context)
-- Codebase analysis (Glob, Grep, Read as needed)
-- Web search for best practices if the domain requires it
-
-**Do NOT create placeholder/template files.** Every file must contain real, useful content derived from what you know about this project.
+If agreed, create files with **real content from this recon session** — never placeholders.
 
 ---
 
-## Phase 5: Doc Health Audit
+## Phase 5: Doc Health
 
-### Category C — Auto-apply (silent, no user notification)
-
-Apply immediately:
-- Fix typos and grammatical errors
-- Correct provably wrong status labels (e.g., "In Progress" when code is complete and deployed)
-- Update stale dates that contradict reality
-- Remove exact duplicate sentences across files (keep the copy in the most appropriate file)
-
-### Category B — Present with keep/revert
-
-Show the user each proposed change:
+Present **all** proposed changes together, grouped by confidence:
 
 ```markdown
 ### Doc Health: Proposed Changes
 
-**1. [File] — [Description]**
-Before: [snippet]
-After: [snippet]
-Reason: [why]
+**Auto-fixes** (typos, provably wrong status, stale dates, exact duplicates):
+1. [File] — [change] — Reason: [why]
+2. ...
 
-**2. [File] — [Description]**
-...
+**Suggested edits** (restructuring, merging overlap, rewording, consolidating):
+3. [File] — Before: [x] → After: [y] — Reason: [why]
+4. ...
 
-Options: `keep all` | `revert all` | `keep 1,3 revert 2` (example)
+Options: `apply all` | `auto-fixes only` | `suggested only` | `skip all`
+  or cherry-pick: `apply 1,2,4 skip 3`
 ```
 
-Category B includes:
-- Restructuring sections for clarity
-- Merging overlapping content across files into single source of truth
-- Deleting paragraphs redundant with other files
-- Rewording for clarity or consistency
-- Consolidating scattered information
-
-**Revert only undoes Category B changes, not Category C.**
-
-**IMPORTANT:** Never remove nuanced information, caveats, or domain context that might be needed. When in doubt, keep it and flag for the user.
+**IMPORTANT:** Never remove nuanced information, caveats, or domain context. When in doubt, include it as a suggested edit, not an auto-fix.
 
 ---
 
 ## Common Mistakes
 
-- **Using subagents on small repos** — If ≤ 10 doc files, read them all directly. Subagent overhead isn't worth it.
-- **Reality-checking instructions as claims** — Skill files, templates, and code blocks describe what to DO, not what EXISTS. Only reality-check descriptive docs (README, CLAUDE.md, specs, status, todos).
-- **Hoarding context budget** — Use the full 5% for deep reads. Skimping here means worse synthesis. The budget exists to be spent, not saved.
-- **Treating all docs as equal** — Primary spec and todo files matter most. READMEs often lag.
-- **Missing codebase cross-reference** — A todo saying "build pricing page" when the page exists is the most valuable finding recon can surface.
-- **Over-editing docs** — Category C must be conservative. If not 100% sure a status is wrong, make it Category B.
-- **Ignoring memory** — MEMORY.md often has context no single doc file contains.
-- **Ignoring empty categories** — A project with no intent or spec docs is a finding, not a non-event. Surface the gap and offer to fill it with real content.
+- **Subagents on small repos** — ≤ 10 files → read directly.
+- **Reality-checking prescriptive content** — skills, templates, and code blocks describe behavior, not current state. Skip them.
+- **Hoarding read budget** — use the full 20K tokens. Better context = better synthesis.
+- **Ignoring git history** — recent commits reveal what's active. A `git log` is one of the highest-signal inputs.
+- **Ignoring empty categories** — a missing spec or intent doc is a finding, not a non-event.
+- **Over-editing** — when unsure, make it a suggested edit, not an auto-fix.

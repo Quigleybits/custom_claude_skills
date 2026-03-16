@@ -45,17 +45,15 @@ digraph recon {
 - `**/*.md` excluding `node_modules`, `.git`, `vendor`, `dist`, `build`
 - Cap at 50 files, prioritize by most recently modified
 
-**Categorize every file:**
+**Categorize every file into one or more disciplines:**
 
-| Category | Signal words / paths | Covers |
-|----------|---------------------|--------|
-| **Prompt Engineering** | `CLAUDE.md`, `AGENTS.md`, `GEMINI.md`, `.claude/`, skills, hooks | AI agent instructions, prompt optimization |
-| **Context Engineering** | `status`, `handoff`, `context`, `memory`, `dev_notes`, `MEMORY.md` | Project state, session continuity |
-| **Intent Engineering** | `overview`, `vision`, `goals`, `why`, `purpose`, `intent` | Why we're building, success criteria |
-| **Specification Engineering** | `spec`, `design`, `plan`, `architecture`, `RFC`, `ADR` | What to build, how, standards |
-| **Task Engineering** | `todo`, `tasks`, `backlog`, `roadmap`, `issues`, `decisions` | What's next, priorities, blockers |
-
-> **Note:** These category definitions are provisional and under refinement. Use your best judgment when a file doesn't clearly fit.
+| Discipline | Signal files | What it is |
+|------------|-------------|------------|
+| **Prompt Craft** | `CLAUDE.md`, `AGENTS.md`, `GEMINI.md`, `.claude/`, skills, hooks | Direct agent instructions: guardrails, examples, output format. Session-level, synchronous. Table stakes. |
+| **Context Engineering** | `status`, `handoff`, `context`, `memory`, `dev_notes`, `MEMORY.md` | The information environment agents operate in: system prompts, tool definitions, memory, retrieved docs. The other 99% of the context window. |
+| **Intent Engineering** | `overview`, `vision`, `goals`, `why`, `purpose`, `intent`, `values` | What agents should *want*: organizational purpose, trade-off hierarchies, decision boundaries. Context without intent = fast optimization in the wrong direction. |
+| **Specification Engineering** | `spec`, `design`, `plan`, `architecture`, `RFC`, `ADR` | Agent-executable documents: self-contained problems, acceptance criteria, constraints, task decomposition, evaluation design. |
+| **Task Engineering** | `todo`, `tasks`, `backlog`, `roadmap`, `issues`, `decisions` | Independently executable work units, priorities, blockers, progress tracking. Subset of specification but tracked separately because task files change frequently. |
 
 ---
 
@@ -168,7 +166,7 @@ Apply changes? Pick one:
 
 - **Subagents on small repos** — ≤ 10 files → read directly.
 - **Reality-checking prescriptive content** — skills, templates, and code blocks describe behavior, not current state. Skip them.
-- **Hoarding read budget** — use the full 20K tokens. Better context = better synthesis.
+- **Hoarding read budget** — use the full 25K tokens. Better context = better synthesis.
 - **Ignoring git history** — recent commits reveal what's active. A `git log` is one of the highest-signal inputs.
 - **Ignoring empty categories** — a missing spec or intent doc is a finding, not a non-event.
 - **Over-editing** — when unsure, make it a suggested edit, not an auto-fix.

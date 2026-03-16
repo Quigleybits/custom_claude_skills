@@ -81,6 +81,7 @@ IMPORTANT: Only reality-check DESCRIPTIVE docs (README, CLAUDE.md, specs,
 status, todos). Skip PRESCRIPTIVE content (instructions, templates, code
 blocks, files under skills/) — these describe behavior, not current state.
 
+Return findings as a structured list, one entry per file.
 Files to scan: [LIST]
 ```
 

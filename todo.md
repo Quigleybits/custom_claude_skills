@@ -5,7 +5,7 @@
 
 ## Soon
 - [ ] Skill evaluation & trigger testing framework — `eval-set.json` per skill with test queries and `should_trigger` flags, `npm run eval` to verify activation and output quality
-- [ ] Set up GitHub remote and push repo
+- [x] Set up GitHub remote and push repo
 - [ ] npm postinstall hook so `npm install @quigleybits/claude-skills` auto-links skills into `~/.claude/skills/`
 
 ## Later

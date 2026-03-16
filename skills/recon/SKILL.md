@@ -15,10 +15,14 @@ Full-spectrum project reconnaissance. Reads all documentation (specs, todos, con
 digraph recon {
     rankdir=TB;
     node [shape=box];
-    "Phase 1: Discover docs" -> "Phase 2: Subagent recon";
-    "Phase 2: Subagent recon" -> "Phase 3: Selective deep read";
+    "Phase 1: Discover docs" -> "≤ 10 files?" [shape=diamond];
+    "≤ 10 files?" -> "Read all directly" [label="yes"];
+    "≤ 10 files?" -> "Phase 2: Subagent scan" [label="no"];
+    "Phase 2: Subagent scan" -> "Phase 3: Selective deep read";
+    "Read all directly" -> "Phase 4: Synthesize + next steps";
     "Phase 3: Selective deep read" -> "Phase 4: Synthesize + next steps";
-    "Phase 4: Synthesize + next steps" -> "Phase 5: Doc health audit";
+    "Phase 4: Synthesize + next steps" -> "Phase 4b: Missing category analysis";
+    "Phase 4b: Missing category analysis" -> "Phase 5: Doc health audit";
     "Phase 5: Doc health audit" -> "Present to user" [shape=doublecircle];
 }
 ```
@@ -58,9 +62,11 @@ Glob for:
 
 ---
 
-## Phase 2: Subagent Recon
+## Phase 2: Scan Docs
 
-Dispatch **parallel subagents** (Explore type, one per category that has files). Each subagent receives the file list for its category and these instructions:
+**Small-repo shortcut (≤ 10 doc files total):** Skip subagents entirely. Read all files directly in main context and proceed to Phase 3 (which becomes a no-op since everything is already read). This avoids subagent overhead when the files would fit comfortably in context anyway.
+
+**Large-repo path (> 10 doc files):** Dispatch **parallel subagents** (Explore type, one per category that has files). Each subagent receives the file list for its category and these instructions:
 
 ```
 You are a recon scout for project documentation.
@@ -71,6 +77,14 @@ For EACH file in your list:
 3. **Overlap**: Content duplicated in other files you've read
 4. **Codebase reality check**: Use Glob and Grep to verify that files, pages,
    features, and paths mentioned in the doc actually exist. Note discrepancies.
+
+IMPORTANT — Prescriptive vs descriptive content:
+- **Prescriptive content** (instructions, templates, examples, code blocks,
+  files under skills/) tells agents what to DO. Do NOT reality-check these
+  against the current codebase — they describe behavior for target repos,
+  not claims about this one.
+- **Descriptive content** (README, CLAUDE.md, spec files, status files, todo
+  items) makes claims about the current project. Reality-check ONLY these.
 
 Return findings as a structured list, one entry per file.
 Files to scan: [LIST]
@@ -92,9 +106,9 @@ Based on subagent summaries, select files for full reading in **main context**.
 - File was modified in the last 7 days
 
 **Context budget:**
-- Start with up to **5% of context** for deep reads
-- If more files need reading, use up to **15% total**
-- Beyond that, rely on subagent summaries
+- Use the full **5% of context** for deep reads — don't skimp, this is a small price for better repo understanding
+- If more files need reading, expand up to **15% total** — but never exceed this
+- If all qualifying files would exceed 15%, use the remaining budget (above the initial 5%) to read subagent summaries plus the highest-priority files (primary spec, primary todo, files with codebase discrepancies first)
 
 Use the Read tool directly — do NOT dispatch subagents for this phase.
 
@@ -136,6 +150,22 @@ Cross-reference all findings (subagent summaries + deep reads + memory). Think a
 - Tasks that unblock others -> Important
 - Independent improvements -> Normal
 - Nice-to-haves / future work -> Low
+
+### Missing Category Analysis
+
+After synthesis, check which of the 5 categories (Prompt, Context, Intent, Specification, Task Engineering) have **zero files**. For each empty category:
+
+1. **Name the gap** — which category is missing
+2. **Explain why it matters** — specific to this codebase, not generic advice. Use what you learned from recon to explain what value the file would add here.
+3. **Propose a file** — suggest a concrete filename and 1-2 sentence description of what it would contain
+4. **Ask the user** — present all missing categories together and ask: "Want me to create any of these?"
+
+If the user agrees, create the files using:
+- Findings from this recon session (you already have the context)
+- Codebase analysis (Glob, Grep, Read as needed)
+- Web search for best practices if the domain requires it
+
+**Do NOT create placeholder/template files.** Every file must contain real, useful content derived from what you know about this project.
 
 ---
 
@@ -182,8 +212,11 @@ Category B includes:
 
 ## Common Mistakes
 
-- **Reading everything into main context** — Use subagents for scanning. Deep-read only what matters.
+- **Using subagents on small repos** — If ≤ 10 doc files, read them all directly. Subagent overhead isn't worth it.
+- **Reality-checking instructions as claims** — Skill files, templates, and code blocks describe what to DO, not what EXISTS. Only reality-check descriptive docs (README, CLAUDE.md, specs, status, todos).
+- **Hoarding context budget** — Use the full 5% for deep reads. Skimping here means worse synthesis. The budget exists to be spent, not saved.
 - **Treating all docs as equal** — Primary spec and todo files matter most. READMEs often lag.
 - **Missing codebase cross-reference** — A todo saying "build pricing page" when the page exists is the most valuable finding recon can surface.
 - **Over-editing docs** — Category C must be conservative. If not 100% sure a status is wrong, make it Category B.
 - **Ignoring memory** — MEMORY.md often has context no single doc file contains.
+- **Ignoring empty categories** — A project with no intent or spec docs is a finding, not a non-event. Surface the gap and offer to fill it with real content.

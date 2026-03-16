@@ -15,12 +15,12 @@ Full-spectrum project reconnaissance. Reads all documentation (specs, todos, con
 digraph recon {
     rankdir=TB;
     node [shape=box];
-    "Phase 1: Discover docs" -> "≤ 10 files?" [shape=diamond];
+    "Phase 1: Discover docs\n(layers 1-3 parallel)" -> "≤ 10 files?" [shape=diamond];
     "≤ 10 files?" -> "Read all directly" [label="yes"];
-    "≤ 10 files?" -> "Phase 2: Subagent scan" [label="no"];
-    "Phase 2: Subagent scan" -> "Phase 3: Selective deep read";
+    "≤ 10 files?" -> "Phase 2: Scouts + obvious reads\n(parallel)" [label="no"];
+    "Phase 2: Scouts + obvious reads\n(parallel)" -> "Phase 3: Remaining deep reads";
     "Read all directly" -> "Phase 4: Synthesize + next steps";
-    "Phase 3: Selective deep read" -> "Phase 4: Synthesize + next steps";
+    "Phase 3: Remaining deep reads" -> "Phase 4: Synthesize + next steps";
     "Phase 4: Synthesize + next steps" -> "Phase 4b: Missing category analysis";
     "Phase 4b: Missing category analysis" -> "Phase 5: Doc health audit";
     "Phase 5: Doc health audit" -> "Present to user" [shape=doublecircle];
@@ -31,7 +31,7 @@ digraph recon {
 
 ## Phase 1: Discover Docs
 
-Find all documentation files using a layered approach. Move to the next layer if the previous one yields insufficient results.
+Find all documentation files. **Run Layers 1-3 in parallel** (they are independent sources), then combine results.
 
 **Layer 1 — Explicit config:**
 Check CLAUDE.md for a `## Recon Files` or `## Spec Files` section. If found, use that list as primary source.
@@ -46,7 +46,9 @@ Glob for:
 - `.claude/**/*.md` (skills, memory)
 - `CLAUDE.md` at any depth
 
-**Layer 4 — Extended scan (if Layer 3 yields < 5 files):**
+All three layers run as parallel tool calls in a single message. Combine their results, deduplicate.
+
+**Layer 4 — Extended scan (only if Layers 1-3 combined yield < 5 files):**
 - `**/*.md` excluding `node_modules`, `.git`, `vendor`, `dist`, `build`, `CHANGELOG.md`
 - Cap at 50 files; prioritize by most recently modified
 
@@ -66,7 +68,13 @@ Glob for:
 
 **Small-repo shortcut (≤ 10 doc files total):** Skip subagents entirely. Read all files directly in main context and proceed to Phase 3 (which becomes a no-op since everything is already read). This avoids subagent overhead when the files would fit comfortably in context anyway.
 
-**Large-repo path (> 10 doc files):** Dispatch **parallel subagents** (Explore type, one per category that has files). Each subagent receives the file list for its category and these instructions:
+**Large-repo path (> 10 doc files):** Dispatch parallel subagents with these rules:
+
+**Subagent merging:** Do not spawn a subagent for a category with fewer than 3 files. Merge small categories into a single combined scout. Aim for the fewest subagents that cover all files — typically 2-4 scouts, not 5.
+
+**Parallel deep-read kickoff:** While dispatching scouts, also start reading **obvious Phase 3 candidates** directly in main context in the same message: the primary todo file, the primary spec, and any file modified in the last 24 hours. This overlaps scout wait time with useful reads. Scout results then augment what you already know rather than being a prerequisite.
+
+Each subagent (Explore type) receives its file list and these instructions:
 
 ```
 You are a recon scout for project documentation.
@@ -96,9 +104,9 @@ Collect all subagent reports before proceeding.
 
 ## Phase 3: Selective Deep Read
 
-Based on subagent summaries, select files for full reading in **main context**.
+Based on subagent summaries, select **remaining** files for full reading in main context (some may already be read from the parallel kickoff in Phase 2).
 
-**Read fully if any apply:**
+**Read fully if any apply (and not already read):**
 - File has staleness signals needing assessment
 - File contains task lists or next steps
 - File is the primary spec or primary todo

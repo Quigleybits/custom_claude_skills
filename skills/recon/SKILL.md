@@ -151,8 +151,12 @@ Present **all** proposed changes together, grouped by confidence:
 3. [File] — Before: [x] → After: [y] — Reason: [why]
 4. ...
 
-Options: `apply all` | `auto-fixes only` | `suggested only` | `skip all`
-  or cherry-pick: `apply 1,2,4 skip 3`
+Apply changes? Pick one:
+  1. apply all
+  2. auto-fixes only
+  3. suggested only
+  4. skip all
+  5. cherry-pick (e.g. "apply 1,3,5 skip 2,4")
 ```
 
 **IMPORTANT:** Never remove nuanced information, caveats, or domain context. When in doubt, include it as a suggested edit, not an auto-fix.

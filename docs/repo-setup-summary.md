@@ -8,7 +8,7 @@ Git repo at `C:\Users\aidan\git_projects\custom_claude_skills` for developing, t
 
 ```
 skills/              # One subdirectory per skill, each containing SKILL.md
-scripts/             # Dev tools (validate, stats, link)
+scripts/             # Dev tools (validate, stats, link, create)
 .claude-plugin/      # Plugin marketplace metadata
 docs/                # Project documentation
 package.json         # npm publishable as @quigleybits/claude-skills
@@ -43,7 +43,7 @@ LICENSE              # MIT
 
 ## Current Skills
 
-- **recon** — Full-spectrum project reconnaissance and doc health audit (987 words, ~1776 tokens, 0 validation errors)
+- **recon** — Full-spectrum project reconnaissance and doc health audit (1140 words, ~1952 tokens)
 
 ## What Is Not Set Up
 

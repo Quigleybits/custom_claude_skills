@@ -30,7 +30,7 @@ Feature requests collected during skill development. These are capabilities that
 
 ## 2. Allow PreCompact hook to run skills before compaction
 
-**Request:** When a `PreCompact` hook blocks compaction (exit 2), allow the block reason to reference a skill (e.g., "run /concon first") and have Claude Code automatically invoke it.
+**Request:** When a `PreCompact` hook blocks compaction (exit 2), allow the block reason to reference a skill (e.g., "run /conlib first") and have Claude Code automatically invoke it.
 
 **Why:** Currently exit code 2 blocks compaction and shows the reason to Claude, who then needs to interpret it and invoke the skill. This works but adds a layer of indirection. Direct skill invocation from hooks would be cleaner.
 

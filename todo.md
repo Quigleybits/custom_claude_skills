@@ -1,7 +1,7 @@
 # Todo
 
 ## Soon
-- [ ] Skill evaluation & trigger testing framework — `eval-set.json` per skill with test queries and `should_trigger` flags, `npm run eval` to verify activation and output quality
+- [ ] Skill evaluation & trigger testing framework — structure exists (`eval-set.json` + `scripts/eval-skills.mjs`), needs LLM integration to actually evaluate trigger accuracy
 
 ## Later
 - [ ] Cross-platform export script (`npm run export -- --target cursor,codex,aider`) — converts SKILL.md to other AI tool formats

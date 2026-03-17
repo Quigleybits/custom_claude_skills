@@ -1,0 +1,20 @@
+{
+  "tests": [
+    {
+      "query": "I just started on this project, can you give me an overview and tell me what to do next?",
+      "should_trigger": true
+    },
+    {
+      "query": "Can you audit the documentation health in this repository?",
+      "should_trigger": true
+    },
+    {
+      "query": "Write a python script to parse a CSV file.",
+      "should_trigger": false
+    },
+    {
+      "query": "Fix the bug in the login component.",
+      "should_trigger": false
+    }
+  ]
+}

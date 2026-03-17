@@ -19,6 +19,7 @@
     "LICENSE"
   ],
   "scripts": {
+    "eval": "node scripts/eval-skills.mjs",
     "validate": "node scripts/validate-skills.mjs",
     "stats": "node scripts/skill-stats.mjs",
     "link": "node scripts/link-skills.mjs",

@@ -81,9 +81,9 @@ This extends recon's existing gap analysis with a durability dimension.
 
 ---
 
-## 4. `/distill`
+## 4. `/concon`
 
-**Working names:** `/distill` (preferred — you're distilling scattered rejections into concentrated constraints), `/conlib` (constraint library — more literal), `/rejects` (too negative)
+**Working names:** `/concon` (/concon = constraint condensation... /distill preferred by opus — you're distilling scattered rejections into concentrated constraints), `/conlib` (constraint library — more literal), `/rejects` (too negative)
 
 **Status:** Planned — most novel, most complex (hook + skill combo)
 **Source:** "Stop accepting AI output that looks right" (Mar 10)
@@ -92,35 +92,49 @@ This extends recon's existing gap analysis with a durability dimension.
 
 **Architecture — two layers:**
 
-### Layer 1: Capture (hook in settings.json)
-A `Stop` hook that runs at the end of each agent turn. Detects rejection signals in the conversation:
-- Explicit corrections: "no", "not that", "instead do", "don't", "wrong", "that's not what I meant"
-- Preference signals: "I prefer", "always use", "never do"
-- Pattern: user rejects output → provides correction → correction contains an encodable constraint
+### Layer 1: Auto-trigger (PreCompact hook)
+Claude Code has a `PreCompact` hook that fires right before auto-compaction. This is the key mechanism:
 
-Appends structured entries to a log file (e.g., `.claude/rejections.jsonl`):
+1. Auto-compact triggers at ~95% context (configurable via `CLAUDE_AUTOCOMPACT_PCT_OVERRIDE=75`)
+2. `PreCompact` hook fires → script exits with code 2 → **blocks compaction**
+3. Block reason sent to Claude: "Run /concon to capture constraints before compacting"
+4. Claude runs `/concon`, encodes rejections into CLAUDE.md/memory
+5. Hook writes a temp flag file (e.g., `/tmp/.concon-done-{session}`)
+6. Next compaction attempt → hook sees flag → exits 0 → compaction proceeds
+7. Flag is cleaned up
+
+No transcript parsing. No file size estimation. The system tells us exactly when compaction is imminent.
+
+### Layer 2: Capture (Stop hook — lightweight)
+A `Stop` hook runs after every agent turn to passively log rejection signals:
+- Parses `last_assistant_message` from stdin for correction patterns
+- Detects: "no", "not that", "instead do", "don't", "wrong", "that's not what I meant"
+- Appends structured entries to `.claude/rejections.jsonl`:
 ```json
-{"timestamp": "...", "signal": "correction", "context": "...", "constraint": "...", "session": "..."}
+{"timestamp": "...", "signal": "correction", "context": "...", "session": "..."}
 ```
+This is passive capture only — lightweight, no blocking.
 
-**Open question:** Claude Code hooks can't trigger on context thresholds (e.g., "10% tokens remaining"). Hooks fire on events (`Stop`, `PreToolUse`, `PostToolUse`, `Notification`). The most practical capture point is the `Stop` hook, which fires after every agent turn. Alternatively, a `Notification` hook could catch compaction events. For now, the `Stop` hook with lightweight pattern matching is the simplest approach.
-
-### Layer 2: Encode (the `/distill` skill)
-Run periodically (before `/compact`, at session end, or weekly). The skill:
+### Layer 3: Encode (the `/concon` skill)
+Triggered automatically by the PreCompact hook, or manually anytime. The skill:
 1. Reads the rejection log (`.claude/rejections.jsonl`)
-2. Reads existing CLAUDE.md constraints and feedback memories
-3. Identifies patterns:
+2. Reads current conversation context (richest source — about to be compressed)
+3. Reads existing CLAUDE.md constraints and feedback memories
+4. Identifies patterns:
    - Recurring rejections (same mistake across sessions → systemic gap)
    - One-off corrections (may not need encoding)
    - Contradictions (later rejection overrides earlier one)
-4. Proposes new CLAUDE.md rules or memory entries, grouped by confidence:
+5. Proposes new CLAUDE.md rules or memory entries, grouped by confidence:
    - **High confidence:** Same rejection 3+ times → auto-encodable
    - **Medium confidence:** Rejection with clear "because" reasoning → suggest encoding
    - **Low confidence:** Single occurrence → log but don't encode yet
-5. User approves/rejects proposed encodings (same picker pattern as recon doc health)
-6. Cleans processed entries from the log
+6. User approves/rejects proposed encodings (same picker pattern as recon doc health)
+7. Cleans processed entries from the log
 
-**When to run:** Before `/compact` (richest context, about to be compressed), at end of long sessions, or on a cadence. Not continuously — the capture hook runs continuously, the encoding skill runs on demand.
+**When it runs:**
+- **Automatically** — PreCompact hook blocks compaction, tells Claude to run `/concon` first
+- **Manually** — User runs `/concon` anytime (session end, weekly review)
+- **Configurable threshold** — Set `CLAUDE_AUTOCOMPACT_PCT_OVERRIDE=75` for earlier trigger
 
 **Key insight from transcript:** The three dimensions of rejection are learnable:
 - **Recognition** — detecting something is wrong (domain experience)
@@ -138,4 +152,4 @@ The skill handles encoding. Over time, it also helps with articulation by showin
 | 1 | `/frontier` | New skill | Medium | None |
 | 2 | Recon v0.2 | Enhancement | Low | Existing recon |
 | 3 | `/harness-audit` | New skill | Medium-High | Needs to understand Claude Code internals |
-| 4 | `/distill` | Hook + skill | High | Needs hook design + skill + log format |
+| 4 | `/concon` | PreCompact hook + Stop hook + skill | High | Needs hook design + skill + log format |

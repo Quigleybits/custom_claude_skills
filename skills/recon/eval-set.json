@@ -1,20 +1,23 @@
 {
   "tests": [
-    {
-      "query": "I just started on this project, can you give me an overview and tell me what to do next?",
-      "should_trigger": true
-    },
-    {
-      "query": "Can you audit the documentation health in this repository?",
-      "should_trigger": true
-    },
-    {
-      "query": "Write a python script to parse a CSV file.",
-      "should_trigger": false
-    },
-    {
-      "query": "Fix the bug in the login component.",
-      "should_trigger": false
-    }
+    { "query": "I just started on this project, can you give me an overview and tell me what to do next?", "should_trigger": true },
+    { "query": "Can you audit the documentation health in this repository?", "should_trigger": true },
+    { "query": "What's the current state of this codebase?", "should_trigger": true },
+    { "query": "I'm resuming work after a week off, catch me up", "should_trigger": true },
+    { "query": "I'm new to this codebase, help me understand the project", "should_trigger": true },
+    { "query": "What should we work on next?", "should_trigger": true },
+    { "query": "Scan the docs for anything stale or out of date", "should_trigger": true },
+    { "query": "Are the docs accurate? Cross-check them against the code", "should_trigger": true },
+
+    { "query": "Write a python script to parse a CSV file", "should_trigger": false },
+    { "query": "Fix the bug in the login component", "should_trigger": false },
+    { "query": "Add a new API endpoint for user authentication", "should_trigger": false },
+    { "query": "Refactor this function to use async/await", "should_trigger": false },
+    { "query": "Help me write unit tests for the payment module", "should_trigger": false },
+    { "query": "Create a new README for this project", "should_trigger": false },
+    { "query": "What does this function do?", "should_trigger": false },
+    { "query": "Review the pull request", "should_trigger": false },
+    { "query": "Deploy the app to production", "should_trigger": false },
+    { "query": "List all the files in the src directory", "should_trigger": false }
   ]
 }

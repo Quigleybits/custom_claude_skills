@@ -1,0 +1,23 @@
+{
+  "tests": [
+    { "query": "I'm done for today, let's wrap up this session", "should_trigger": true },
+    { "query": "Let's do a debrief before I close out", "should_trigger": true },
+    { "query": "Can you clean up any loose ends and update the docs before we stop?", "should_trigger": true },
+    { "query": "I'm ending this session, capture what we learned", "should_trigger": true },
+    { "query": "Wrap up and commit everything, I'm done", "should_trigger": true },
+    { "query": "Let's preserve what we discovered today before closing", "should_trigger": true },
+    { "query": "Session's over, update documentation and commit", "should_trigger": true },
+    { "query": "Time to close out — any loose ends to tie up?", "should_trigger": true },
+
+    { "query": "Write a python script to parse a CSV file", "should_trigger": false },
+    { "query": "Fix the bug in the login component", "should_trigger": false },
+    { "query": "What's the current state of this codebase?", "should_trigger": false },
+    { "query": "I just started on this project, give me an overview", "should_trigger": false },
+    { "query": "Review the pull request", "should_trigger": false },
+    { "query": "Help me write unit tests for the payment module", "should_trigger": false },
+    { "query": "Create a new README for this project", "should_trigger": false },
+    { "query": "Refactor this function to use async/await", "should_trigger": false },
+    { "query": "Deploy the app to production", "should_trigger": false },
+    { "query": "What does this function do?", "should_trigger": false }
+  ]
+}

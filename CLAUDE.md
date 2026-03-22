@@ -38,3 +38,4 @@ docs/             # Project documentation
 ## Current Skills
 
 - **recon** — Full-spectrum project reconnaissance and doc health audit
+- **debrief** — Session-end cleanup, discipline-aware knowledge capture, and documentation routing

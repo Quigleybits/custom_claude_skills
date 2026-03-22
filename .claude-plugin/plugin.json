@@ -1,10 +1,10 @@
 {
   "name": "quigleybits-skills",
-  "description": "Custom Claude Code skills: project recon, and more",
+  "description": "Custom Claude Code skills: project recon, session debrief, and more",
   "version": "0.1.0",
   "author": {
     "name": "quigleyBits"
   },
   "license": "MIT",
-  "keywords": ["skills", "recon", "project-reconnaissance"]
+  "keywords": ["skills", "recon", "debrief", "project-reconnaissance", "session-management"]
 }

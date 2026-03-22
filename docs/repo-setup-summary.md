@@ -43,7 +43,8 @@ LICENSE              # MIT
 
 ## Current Skills
 
-- **recon** — Full-spectrum project reconnaissance and doc health audit (1140 words, ~1952 tokens)
+- **recon** — Full-spectrum project reconnaissance and doc health audit (1142 words, ~1952 tokens)
+- **debrief** — Session-end cleanup, discipline-aware knowledge capture, and documentation routing (1108 words, ~1808 tokens)
 
 ## What Is Not Set Up
 

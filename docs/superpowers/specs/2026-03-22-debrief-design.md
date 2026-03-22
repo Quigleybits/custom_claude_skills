@@ -8,7 +8,7 @@
 
 Session-end skill that closes out work cleanly, captures knowledge through the 5 engineering disciplines, and routes it to the right persistence targets. Manual invocation via `/debrief`.
 
-**Core principle:** Report what debrief *did*, not what the session was *about*. Complete but minimal — lists, not prose. Adaptive sizing scales output to session complexity.
+**Reporting style:** Output leads with what debrief *did* (actions taken, knowledge routed, items deferred), with brief session context for orientation. Complete but minimal — lists, not prose. Adaptive sizing scales output to session complexity.
 
 ## Phase Architecture
 

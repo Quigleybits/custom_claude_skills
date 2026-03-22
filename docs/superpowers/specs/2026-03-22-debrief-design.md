@@ -38,8 +38,8 @@ Scan workspace state. No actions taken — gathering facts only.
 - `git status` — uncommitted changes, untracked files, staged vs unstaged
 - `git diff` — what's actually changed
 - Lint/test state — only if the project has a fast check (<10s). Skip slow suites.
-- Stale TODOs — `TODO`/`FIXME` comments added this session (compare against HEAD~)
-- Dangling files — temp files, `.bak`, debug logs, `console.log`/`print()` statements added this session
+- Stale TODOs — `TODO`/`FIXME` in uncommitted changes (`git diff`)
+- Dangling files — temp files, `.bak`, debug logs. For `console.log`/`print()` statements: only flag if they appear in `git diff` (not pre-existing) and are not in logging/CLI code.
 
 **Categorize each finding as:**
 - **Trivial** — formatting, trailing whitespace, staging tracked files, removing debug output
@@ -55,7 +55,7 @@ Act on ASSESS findings.
 | Category | Action |
 |---|---|
 | **Trivial** | Auto-execute silently. Format, stage, remove debug cruft. |
-| **Substantive** | Present to user: "Fix now? (Y/n)" — execute if yes, defer if no. |
+| **Substantive** | Present to user: "Fix now? (y/N)" — default is defer. Only execute on explicit yes. |
 | **Deferred** | Log as next-session work item. No action taken. |
 
 **Safety rule:** Never modify logic, delete files, or alter public APIs without explicit user approval — even if it looks trivial.
@@ -66,7 +66,9 @@ Act on ASSESS findings.
 
 ## Phase 3: COMMIT WORK
 
-Commit the user's actual work — everything from the session including triage fixes.
+Commit the user's actual work — everything from the session, including triage fixes from Phase 2.
+
+**Guard:** If last commit message starts with `debrief:`, skip Phases 1-3 (prevents double-debrief).
 
 **Flow:**
 1. Check if there are changes to commit. If none, skip to Phase 4.
@@ -74,6 +76,7 @@ Commit the user's actual work — everything from the session including triage f
 3. Generate a style-matched commit message.
 4. Auto-commit.
 5. If commit fails (pre-commit hook), present the error and ask user how to proceed. Don't retry blindly.
+6. If user declines to fix: proceed to Phase 4 with uncommitted changes. Note the uncommitted state in the Phase 6 report. Phase 6 still attempts its own commit (debrief docs are separate files, unlikely to hit the same hook).
 
 **Commit scope:** All tracked changes + newly staged files from triage. Untracked intentional files (new source files) get staged. Generated files (`.env`, `node_modules`, build artifacts) get ignored.
 
@@ -99,15 +102,15 @@ Core differentiator. Single pass across the 5 engineering disciplines asking: "D
 
 Applied during the same pass — not separate phases:
 
-1. **Cross-Category Reasoning** — Look for connections *between* disciplines. A spec edge case (Specification) that revealed a missing context file (Context) that needs a new guardrail (Prompt Craft). Chain findings, don't silo them.
+1. **Cross-Category Reasoning** — Look for connections *between* disciplines. A spec edge case (Specification) that revealed a missing context file (Context) that needs a new guardrail (Prompt Craft). Chain findings, don't silo them. *Concrete: when a finding touches discipline X, grep CLAUDE.md and memory for related entries in other disciplines.*
 
-2. **Judgment Line Detection** — Did anything clarify where the human/agent boundary should be for this project? High-value Intent Engineering findings that prevent future agents from overstepping.
+2. **Judgment Line Detection** — Did anything clarify where the human/agent boundary should be for this project? High-value Intent Engineering findings that prevent future agents from overstepping. *Concrete: check if the session involved user corrections like "don't do X automatically" or "always ask before Y."*
 
-3. **Time-Bridging Signal** — Flag information with future relevance beyond the next session: deadlines, expiration-style events, decisions that will matter in 3+ months. Route to memory with explicit time context.
+3. **Time-Bridging Signal** — Flag information with future relevance beyond the next session: deadlines, expiration-style events, decisions that will matter in 3+ months. Route to memory with explicit time context. *Concrete: scan findings for dates, version numbers, "until," "after," "before," "deadline," "expires."*
 
 4. **Compounding Test** — For each finding ask: "Will this make the next session better?" If yes, capture it. If it's just a record of what happened, it's noise. This is the quality filter that prevents memory bloat.
 
-5. **Capture Consistency** — Each finding must be actionable and structured. Tagged with: discipline, routing target, and whether it's a new insight vs an update to existing knowledge.
+5. **Capture Consistency** — Each finding must be actionable and structured. Tagged with: discipline, routing target, and whether it's a new insight vs an update to existing knowledge. *Concrete: before writing, read MEMORY.md index to check for existing entries on the same topic.*
 
 ### Rules
 
@@ -134,7 +137,8 @@ Execute routing for each tagged finding from Phase 4.
 - **Update over create** — Check if an existing memory file or CLAUDE.md section already covers the topic before creating new entries. Deduplicate.
 - **Minimal edits** — Add lines, don't restructure. Debrief shouldn't rewrite docs, just append signal.
 - **No duplicates** — If a finding is already documented (discovered during Phase 4 reads), skip it.
-- **Structured format** — Memory files use the standard frontmatter format. CLAUDE.md additions match existing style.
+- **Structured format** — Memory files use Claude Code's auto-memory frontmatter: `name`, `description`, `type` (user/feedback/project/reference) in YAML between `---` markers. CLAUDE.md additions match existing style.
+- **Routing priority** — When a finding could go to CLAUDE.md or memory, prefer memory files. CLAUDE.md is for conventions and instructions agents need every session; memory is for decisions and context that may be relevant.
 
 ---
 
@@ -142,13 +146,10 @@ Execute routing for each tagged finding from Phase 4.
 
 ### Commit
 
-Auto-commit all debrief changes (triage fixes + documentation updates) as a single commit:
+Auto-commit debrief's documentation and memory changes only (triage fixes were committed with user's work in Phase 3):
 
 ```
 debrief: session wrap-up
-
-Code cleanup:
-- [list of triage actions taken]
 
 Knowledge captured:
 - [list of docs/memory updates, with discipline tags]
@@ -201,6 +202,8 @@ Light sessions with no findings shrink to 3-4 lines. No padding.
 ## Edge Cases
 
 - **No uncommitted changes** — Skip Phase 3, proceed to audit.
-- **Massive diff (>500 lines)** — Summarize by file rather than reading every line. Parallel file reads.
+- **Massive diff (>500 lines)** — Affects all phases. Phase 1: summarize by file, parallel reads. Phase 3: commit message summarizes by area, not line-by-line. Phase 4: audit based on file-level summaries, not full diff.
 - **Merge conflicts in CLAUDE.md** — Don't resolve. Flag in report, let user handle.
 - **Exploration-only session** — Audit still runs. Discovery sessions often produce the richest Context and Intent Engineering findings.
+- **Double-debrief** — If last commit starts with `debrief:`, skip Phases 1-3. Phase 4 audit still runs (user may have continued working after first debrief).
+- **High context usage** — Debrief runs at session end when context may be near capacity. Keep total tool calls under 30. Prefer targeted reads over full file reads.

@@ -158,7 +158,7 @@ The skill handles encoding. Over time, it also helps with articulation by showin
 
 | # | Skill | Type | Complexity | Dependencies | Status |
 |---|-------|------|-----------|-------------|--------|
-| 0 | `/debrief` | New skill | Medium | None | **Built** — testing & publish pending |
+| 0 | `/debrief` | New skill | Medium | None | **Built** — real-project testing & 0.2.0 publish pending |
 | 1 | `/frontier` | New skill | Medium | None | Next to build |
 | 2 | Recon v0.2 | Enhancement | Low | Existing recon | Planned |
 | 3 | `/harness-audit` | New skill | Medium-High | Needs to understand Claude Code internals | Planned |

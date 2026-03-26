@@ -1,7 +1,7 @@
 # `/debrief` — Session-End Skill Design
 
 **Date:** 2026-03-22
-**Status:** Approved
+**Status:** Implemented (2026-03-22) — see `skills/debrief/SKILL.md` for current version
 **Pairs with:** `/recon` (session bookends — recon opens, debrief closes)
 
 ## Overview

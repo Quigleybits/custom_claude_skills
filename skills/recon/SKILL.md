@@ -37,7 +37,7 @@ digraph recon {
 **Convention scan:** Glob for:
 - `*.md`, `docs/**/*.md`, `specs/**/*.md`, `plans/**/*.md`
 - `.claude/**/*.md`, `**/CLAUDE.md`
-- `*.rst`, `*.adoc` (secondary — include if found, don't prioritize over .md)
+- `*.rst`, `*.adoc`, `*.pdf`(secondary — include if found, don't prioritize over .md)
 
 **Git context:** Run `git log --oneline -15` and `git branch --show-current` to understand recent activity and the active branch. Both inform priority in Phase 4.
 

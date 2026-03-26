@@ -1,9 +1,8 @@
 # Todo
 
 ## Soon
-- [ ] Test `/debrief` skill on real project (see manual testing checklist in `docs/superpowers/plans/2026-03-22-debrief.md`, Task 6)
-- [ ] Run trigger eval with API key (`npm run eval`) for debrief
-- [ ] Publish @quigleybits/claude-skills@0.2.0 with debrief included
+- [ ] Retest updated `/debrief` on real project — 7 optimizations applied (2026-03-26), use `skills/debrief/behavioral-eval.md` v2 (37 criteria)
+- [ ] Publish @quigleybits/claude-skills@0.2.0 with debrief included (blocked on retest above)
 - [ ] Build `/frontier` skill — delegation boundary mapper + domain-specific failure patterns (see `docs/skill-ideas.md`)
 - [ ] Recon v0.2 — fold in intent completeness checking + context fragmentation detection
 - [ ] Build `/harness-audit` skill — holistic Claude Code setup health check
@@ -18,6 +17,9 @@
 - [ ] Selective skill installer CLI (`npx @quigleybits/claude-skills install recon`) — lets users pick individual skills instead of installing all
 
 ## Done
+- [x] Debrief v1 tested + 7 optimizations applied (2026-03-26) — concrete checklist, conditional lenses, durability routing, tool call budget, lint fallback, todo fallback, MEMORY.md bootstrap. Behavioral eval v2 (37 criteria).
+- [x] Trigger eval completed (2026-03-26) — 36/36 pass (Opus inline evaluation, both skills). Haiku API eval optional for dev.
+- [x] Added `docs/decisions.md` — 5 design trade-off rules filling Intent Engineering gap.
 - [x] Build `/debrief` skill — 6-phase session-end workflow: assess, triage, commit work, discipline audit, route knowledge, commit & report. Design spec, implementation plan, SKILL.md (1108 words), eval-set.json (18 tests). Linked and validated.
 - [x] Skill evaluation & trigger testing framework — `eval-set.json` + `scripts/eval-skills.mjs` with Anthropic API integration, 18 test cases for recon, `--dry-run` mode
 - [x] Fix stale `~/.claude/skills/recon` copy — replaced with proper symlink to repo

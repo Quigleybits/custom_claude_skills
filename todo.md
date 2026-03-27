@@ -3,10 +3,10 @@
 ## Soon
 - [ ] Retest updated `/debrief` on real project — 7 optimizations applied (2026-03-26), use `skills/debrief/behavioral-eval.md` v2 (37 criteria)
 - [ ] Publish @quigleybits/claude-skills@0.2.0 with debrief included (blocked on retest above)
-- [ ] Build `/frontier` skill — delegation boundary mapper + domain-specific failure patterns (see `docs/skill-ideas.md`)
+- [ ] Build `/roe` skill — rules of engagement, delegation boundary mapper + domain-specific failure patterns (see `docs/skill-ideas.md`)
 - [ ] Recon v0.2 — fold in intent completeness checking + context fragmentation detection
-- [ ] Build `/harness-audit` skill — holistic Claude Code setup health check
-- [ ] Build `/conlib` skill — constraint library with PreCompact hook auto-trigger (see `docs/skill-ideas.md`)
+- [ ] Build `/zero` skill — zero the harness, holistic Claude Code setup health check
+- [ ] Build `/doctrine` skill — encode lessons into law, constraint library with PreCompact hook auto-trigger (see `docs/skill-ideas.md`)
 
 ## Later
 - [ ] Cross-platform export script (`npm run export -- --target cursor,codex,aider`) — converts SKILL.md to other AI tool formats

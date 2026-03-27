@@ -38,6 +38,6 @@ Design decisions and trade-off rules for the @quigleybits/claude-skills suite. C
 
 **Decision:** @quigleybits/claude-skills installs all skills at once via postinstall symlinks. No selective installation (yet).
 
-**Why:** Simplicity for v1. The suite is designed as a coherent set (recon opens sessions, debrief closes them, frontier maps boundaries, etc.). Selective installation is on the backlog (todo.md) but not needed until the skill count grows beyond the initial 5.
+**Why:** Simplicity for v1. The suite is designed as a coherent set (recon opens sessions, debrief closes them, roe defines engagement rules, etc.). Selective installation is on the backlog (todo.md) but not needed until the skill count grows beyond the initial 5.
 
 **Trade-off:** Users who only want one skill get all of them in ~/.claude/skills/. Token cost is negligible since skills load on-demand, but the directory gets cluttered.

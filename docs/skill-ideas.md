@@ -2,11 +2,12 @@
 
 Candidate skills derived from analysis of 19 AI strategy transcripts (2026-02-26 through 2026-03-17). Ranked by buildability, impact, and differentiation from existing skills.
 
-## 1. `/frontier`
+## 1. `/roe`
 
 **Status:** Next to build
 **Source:** "Every AI skill you learned is already wrong" (Mar 1) + "Stop accepting AI output that looks right" (Mar 10)
 **Combines:** frontier-map + failure-model
+**Name origin:** Rules of Engagement — military term defining when/where/how to engage. This skill defines your rules for engaging AI on a given task type.
 
 **What it does:** Given a task type or domain, maps the AI delegation boundary and generates domain-specific failure patterns with verification criteria.
 
@@ -57,7 +58,7 @@ This extends recon's existing gap analysis with a durability dimension.
 
 ---
 
-## 3. `/harness-audit`
+## 3. `/zero`
 
 **Status:** Planned
 **Source:** "Claude Code vs Codex" (Mar 6)
@@ -81,9 +82,9 @@ This extends recon's existing gap analysis with a durability dimension.
 
 ---
 
-## 4. `/conlib`
+## 4. `/doctrine`
 
-**Name:** `/conlib` (constraint library)
+**Name origin:** Military doctrine — fundamental principles derived from experience, encoded to guide future action. This skill captures rejections and encodes them as persistent rules.
 
 **Status:** Planned — most novel, most complex (hook + skill combo)
 **Source:** "Stop accepting AI output that looks right" (Mar 10)
@@ -92,8 +93,8 @@ This extends recon's existing gap analysis with a durability dimension.
 
 **Architecture — three layers + initial setup:**
 
-### Initial setup (first run of `/conlib`)
-On first invocation, `/conlib` configures the environment:
+### Initial setup (first run of `/doctrine`)
+On first invocation, `/doctrine` configures the environment:
 1. Sets `CLAUDE_AUTOCOMPACT_PCT_OVERRIDE=75` in Claude Code settings (triggers compaction earlier, giving more time to capture constraints)
 2. Installs the PreCompact hook and Stop hook in settings.json
 3. Creates `.claude/rejections.jsonl` if it doesn't exist
@@ -106,8 +107,8 @@ Claude Code has a `PreCompact` hook that fires right before auto-compaction. Thi
 
 1. Auto-compact triggers at ~95% context (configurable via `CLAUDE_AUTOCOMPACT_PCT_OVERRIDE=75`)
 2. `PreCompact` hook fires → script exits with code 2 → **blocks compaction**
-3. Block reason sent to Claude: "Run /conlib to capture constraints before compacting"
-4. Claude runs `/conlib`, encodes rejections into CLAUDE.md/memory
+3. Block reason sent to Claude: "Run /doctrine to capture constraints before compacting"
+4. Claude runs `/doctrine`, encodes rejections into CLAUDE.md/memory
 5. Hook writes a temp flag file (e.g., `/tmp/.concon-done-{session}`)
 6. Next compaction attempt → hook sees flag → exits 0 → compaction proceeds
 7. Flag is cleaned up
@@ -124,7 +125,7 @@ A `Stop` hook runs after every agent turn to passively log rejection signals:
 ```
 This is passive capture only — lightweight, no blocking.
 
-### Layer 3: Encode (the `/conlib` skill)
+### Layer 3: Encode (the `/doctrine` skill)
 Triggered automatically by the PreCompact hook, or manually anytime. The skill:
 1. Reads the rejection log (`.claude/rejections.jsonl`)
 2. Reads current conversation context (richest source — about to be compressed)
@@ -141,8 +142,8 @@ Triggered automatically by the PreCompact hook, or manually anytime. The skill:
 7. Cleans processed entries from the log
 
 **When it runs:**
-- **Automatically** — PreCompact hook blocks compaction, tells Claude to run `/conlib` first
-- **Manually** — User runs `/conlib` anytime (session end, weekly review)
+- **Automatically** — PreCompact hook blocks compaction, tells Claude to run `/doctrine` first
+- **Manually** — User runs `/doctrine` anytime (session end, weekly review)
 - **Configurable threshold** — Set `CLAUDE_AUTOCOMPACT_PCT_OVERRIDE=75` for earlier trigger
 
 **Key insight from transcript:** The three dimensions of rejection are learnable:
@@ -159,7 +160,7 @@ The skill handles encoding. Over time, it also helps with articulation by showin
 | # | Skill | Type | Complexity | Dependencies | Status |
 |---|-------|------|-----------|-------------|--------|
 | 0 | `/debrief` | New skill | Medium | None | **Built** — real-project testing & 0.2.0 publish pending |
-| 1 | `/frontier` | New skill | Medium | None | Next to build |
+| 1 | `/roe` | New skill | Medium | None | Next to build |
 | 2 | Recon v0.2 | Enhancement | Low | Existing recon | Planned |
-| 3 | `/harness-audit` | New skill | Medium-High | Needs to understand Claude Code internals | Planned |
-| 4 | `/conlib` | PreCompact hook + Stop hook + skill | High | Needs hook design + skill + log format | Planned |
+| 3 | `/zero` | New skill | Medium-High | Needs to understand Claude Code internals | Planned |
+| 4 | `/doctrine` | PreCompact hook + Stop hook + skill | High | Needs hook design + skill + log format | Planned |

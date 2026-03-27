@@ -4,6 +4,16 @@ Side-by-side comparison of all skills in the @quigleybits/claude-skills suite. U
 
 **Target:** 5 skills shipping together as a complete suite.
 
+## The Suite
+
+| # | Skill | Tagline |
+|---|-------|---------|
+| 1 | `/recon` | Read the terrain |
+| 2 | `/debrief` | Close the mission |
+| 3 | `/roe` | Rules of engagement |
+| 4 | `/zero` | Align the sights |
+| 5 | `/doctrine` | Encode lessons into law |
+
 ---
 
 ## /recon vs /debrief (Session Bookends)

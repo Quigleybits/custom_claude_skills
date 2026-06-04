@@ -1,33 +1,70 @@
 #!/usr/bin/env python3
 """handover_send.py — companion to the /handover skill.
 
-After /handover has written the curated doc into ./.ccb/history/, this either:
-  * CCB-paned mode: resets the registered `claude` pane to a fresh session and
-    pushes `/continue` so the new session auto-loads the handover; or
-  * Direct mode (no live claude pane): prints `@<path>` + the manual next move.
+After /handover writes the curated brief into ./.ccb/history/, this LAUNCHES a
+fresh Claude Code session, pre-seeded to read that brief and continue the work —
+so the user never has to type /clear + /continue by hand.
 
-It NEVER raises — any failure (no pane, CCB internals changed, etc.) degrades to
-the direct-mode message, so /handover always finishes cleanly.
+Design:
+  * Non-destructive. The current session is left intact (it keeps the
+    "handover written + launched" report); a brand-new ``claude`` starts
+    alongside it, already working from the brief. No self-reset, no lost report.
+  * WezTerm-driven, public CLI only (no CCB internals -> no coupling):
+      - inside WezTerm (WEZTERM_PANE set) -> new TAB in the current window
+      - otherwise                         -> new WINDOW via ``cli spawn``,
+                                             else ``wezterm start`` (cold GUI)
+  * Seeded, not /continue. The new session is launched as
+      ``claude.exe "<read-the-brief-and-continue instruction + abs path>"``
+    which is more reliable than depending on @file auto-expansion.
+  * Never raises. Any failure (no wezterm, no claude, spawn error) degrades to
+    the manual message, so /handover always finishes cleanly.
 """
 
 from __future__ import annotations
 
+import os
+import shutil
+import subprocess
 import sys
-import time
 from pathlib import Path
 
-# CCB (codex-dual) library — same internals autonew relies on.
-CCB_LIB = r"C:/Users/aidan/AppData/Local/codex-dual/lib"
+# Fallback locations if the binaries are not on PATH (this machine's installs).
+KNOWN_CLAUDE = Path.home() / ".local" / "bin" / "claude.exe"
+KNOWN_WEZTERM = Path(r"C:/Program Files/WezTerm/wezterm.exe")
+
+# Windows: keep the spawned GUI alive after this helper exits.
+_DETACHED = getattr(subprocess, "DETACHED_PROCESS", 0x00000008)
 
 
 def latest_handover() -> str | None:
     hist = Path.cwd() / ".ccb" / "history"
     files = sorted(hist.glob("*.md"), key=lambda p: p.stat().st_mtime, reverse=True)
-    return files[0].as_posix() if files else None  # forward slashes — safest for @file on Windows
+    return files[0].as_posix() if files else None  # forward slashes — safe for Read on Windows
 
 
-def manual(latest: str | None) -> None:
-    print("Handover doc written.")
+def _resolve(name: str, known: Path) -> str | None:
+    found = shutil.which(name) or shutil.which(f"{name}.exe")
+    if found:
+        return found
+    return str(known) if known.exists() else None
+
+
+def _seed(brief_path: str) -> str:
+    """The opening prompt for the fresh session (passed as one argv element —
+    no shell, so no quoting concerns)."""
+    return (
+        "You are continuing a handed-over Claude Code session. "
+        f"First, use the Read tool to read the handover brief at {brief_path} — "
+        "it is your full context: goal, key decisions, current state, relevant "
+        "files, and the next step. Then carry on the work, starting from its "
+        '"Next step" section. Do not wait for further instructions; begin now.'
+    )
+
+
+def manual(latest: str | None, reason: str = "") -> None:
+    if reason:
+        print(f"(auto-launch unavailable: {reason}; falling back to manual)", file=sys.stderr)
+    print("Handover brief written.")
     if latest:
         print(f"@{latest}")
     print("Next: start a fresh session (/clear or a new window), then run /continue to load it.")
@@ -35,35 +72,42 @@ def manual(latest: str | None) -> None:
 
 def main() -> int:
     latest = latest_handover()
+    if not latest:
+        print("No handover brief found in ./.ccb/history — nothing to launch.", file=sys.stderr)
+        return 0
+
+    wez = _resolve("wezterm", KNOWN_WEZTERM)
+    claude = _resolve("claude", KNOWN_CLAUDE)
+    if not wez or not claude:
+        manual(latest, reason=f"wezterm={'ok' if wez else 'missing'}, claude={'ok' if claude else 'missing'}")
+        return 0
+
+    cwd = str(Path.cwd())
+    seed = _seed(latest)
+    in_wezterm = bool((os.environ.get("WEZTERM_PANE") or "").strip())
+
     try:
-        sys.path.insert(0, CCB_LIB)
-        from pane_registry import load_registry_by_project_id, _get_providers_map
-        from project_id import compute_ccb_project_id
-        from terminal import get_backend_for_session
+        # Primary: ask the running WezTerm GUI to spawn the session and tell us its pane id.
+        spawn = [wez, "cli", "spawn", "--cwd", cwd]
+        if not in_wezterm:
+            spawn.append("--new-window")
+        spawn += ["--", claude, seed]
 
-        pid = compute_ccb_project_id(Path.cwd())
-        rec = load_registry_by_project_id(pid, "claude")
-        pm = _get_providers_map(rec) if rec else {}
-        pane = str((pm.get("claude") or {}).get("pane_id") or "").strip()
-
-        if not rec or not pane:
-            manual(latest)
+        cp = subprocess.run(spawn, capture_output=True, text=True, timeout=15)
+        if cp.returncode == 0:
+            pane = (cp.stdout or "").strip()
+            where = "new tab" if in_wezterm else "new window"
+            print(f"Handover launched: fresh `claude` in a WezTerm {where} (pane {pane}), reading the brief and continuing.")
+            print(f"@{latest}")
             return 0
 
-        backend = get_backend_for_session(rec)
-        if not backend or not backend.is_alive(pane):
-            manual(latest)
-            return 0
-
-        # CCB-paned mode: reset the claude pane, then load the handover.
-        backend.send_text(pane, "/new")
-        time.sleep(1.5)
-        backend.send_text(pane, "/continue")
-        print("Handover written + auto-sent: reset the claude pane and pushed /continue.")
+        # Fallback: no running GUI to talk to -> cold-start one, detached so it survives this helper.
+        subprocess.Popen([wez, "start", "--cwd", cwd, "--", claude, seed], creationflags=_DETACHED, close_fds=True)
+        print("Handover launched: cold-started a WezTerm window running `claude`, reading the brief and continuing.")
+        print(f"@{latest}")
         return 0
     except Exception as exc:  # noqa: BLE001 — intentional catch-all: always degrade gracefully
-        print(f"(auto-chain unavailable: {exc}; falling back to manual)", file=sys.stderr)
-        manual(latest)
+        manual(latest, reason=str(exc))
         return 0
 
 

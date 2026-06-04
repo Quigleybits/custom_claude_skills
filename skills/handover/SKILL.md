@@ -48,18 +48,23 @@ mkdir -p "$PWD/.ccb/history" && echo "TARGET: $(pwd -W)/.ccb/history/claude-$(da
 Then write the composed doc to that exact `TARGET` path using the **Write tool**.
 Write the file before any reset — never reset first (atomic-save discipline).
 
-## Step 3 — Move to a fresh session (MANDATORY)
+## Step 3 — Launch the fresh session (MANDATORY)
 
 ```bash
 py -3 "C:/Users/aidan/.claude/skills/handover/handover_send.py"
 ```
 
-- **CCB-paned mode** (a live `claude` pane is registered): resets that pane to a new session
-  and pushes `/continue`, which auto-loads the handover. One step.
-- **Direct mode** (no registered pane — e.g. `claude` launched directly): prints `@<path>` and
-  the next move. The script never raises; any failure falls back to the direct-mode message.
+This launches a **new** `claude`, pre-seeded to read the brief and continue — the user types
+nothing (no `/clear`, no `/continue`). The current session is left intact (non-destructive).
+
+- **WezTerm available** (the normal case): spawns a fresh `claude` — a new **tab** if this
+  session is already inside WezTerm, else a new **window** — seeded with "read `<brief>` and
+  continue from its Next step". `claude "<prompt>"` auto-runs the seed on boot.
+- **No WezTerm / launch fails**: prints `@<path>` + the manual next move. The script never
+  raises; any failure degrades to this message, so /handover always finishes cleanly.
 
 ## Output
 
-After Step 3, tell the user exactly what happened: the saved path, and either
-"auto-continued in a fresh session" (paned) or the two-key next move — `/clear` then `/continue` (direct).
+After Step 3, report exactly what the script printed: the saved brief path, and either
+"launched a fresh `claude` (new tab/window) already continuing" or — on the manual fallback —
+the two-key next move (`/clear`, then `/continue`).

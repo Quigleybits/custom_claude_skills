@@ -54,34 +54,35 @@
 <div class="wrap">
 
   <h1><code>/handover</code> — design, research &amp; build</h1>
-  <p class="sub">Hand the current session off to a fresh one: generate a curated continuation prompt, route it into a new Claude session via the CCB stack.</p>
+  <p class="sub">Hand the current session off to a fresh one: compose a curated continuation brief, then auto-launch a new seeded <code>claude</code> that reads it and continues — no manual <code>/clear</code> + <code>/continue</code>.</p>
   <div class="badges">
     <span class="badge good">Built 2026-06-04</span>
-    <span class="badge good">Validated · 461 words</span>
-    <span class="badge good">Pilot ✓ direct mode</span>
-    <span class="badge warn">Paned auto-chain unverified</span>
-    <span class="badge">Personal / CCB-coupled</span>
+    <span class="badge good">Validated · 512 words</span>
+    <span class="badge good">Pilot ✓ end-to-end auto-launch</span>
+    <span class="badge good">No CCB internals — wezterm CLI only</span>
+    <span class="badge">Windows / WezTerm-shaped</span>
   </div>
 
   <h2>The idea in one line</h2>
   <div class="panel">
-    Add only the <b>missing half</b> — a curated-prompt generator — and reuse everything CCB already gives you
-    (<code>/continue</code> to ingest, <code>autonew</code> to launch, the pane registry to drive). No tmux, no Zellij, no new runtime deps.
+    Compose the <b>curated brief</b>, then <b>launch a fresh <code>claude</code> seeded to read it and continue</b> —
+    a new WezTerm tab (if already inside WezTerm) or window. Non-destructive: the old session stays put.
+    Uses only the public <code>wezterm</code> CLI + <code>claude.exe</code> — no tmux, no Zellij, no CCB internals.
   </div>
 
   <h2>Flow</h2>
   <div class="flow">
-    <div class="step"><span class="n">1</span><b>Compose</b> a curated handover <i>prompt</i> (Goal · Status · Decisions+why · Failed-approaches · Files+lines · Next step · Don't-do · Suggested skills). <i>The only new capability.</i></div>
+    <div class="step"><span class="n">1</span><b>Compose</b> a curated handover <i>brief</i> (Goal · Status · Decisions+why · Failed-approaches · Files+lines · Next step · Don't-do · Suggested skills). <i>The only "thinking" step.</i></div>
     <div class="arrow">▼</div>
     <div class="step"><span class="n">2</span><b>Atomic-write</b> → <code>./.ccb/history/&lt;utc&gt;-handover.md</code> &nbsp;(newest-wins)</div>
     <div class="arrow">▼</div>
-    <div class="step"><span class="n">3</span><b>Mode-aware send</b> → <code>handover_send.py</code></div>
+    <div class="step"><span class="n">3</span><b>Launch fresh session</b> → <code>handover_send.py</code></div>
     <div class="branch">
-      <div class="step paned"><b>CCB-paned</b><br><code>autonew claude</code> (/new) → push <code>/continue</code> → <span class="yes">one step</span></div>
-      <div class="step direct"><b>Direct</b> (no pane)<br>print <code>@path</code> + <span class="warn">"/clear then /continue"</span></div>
+      <div class="step paned"><b>WezTerm</b> (normal)<br><code>wezterm cli spawn</code> new <b>tab/window</b> → <code>claude.exe "&lt;seed&gt;"</code> → <span class="yes">auto-reads brief + continues</span></div>
+      <div class="step direct"><b>No WezTerm / fail</b><br>print <code>@path</code> + <span class="warn">"/clear then /continue"</span></div>
     </div>
     <div class="arrow">▼</div>
-    <div class="step" style="border-left-color:var(--good)"><b><code>/continue</code></b> (existing skill, untouched) attaches the newest <code>./.ccb/history/*.md</code> via <code>@file</code></div>
+    <div class="step" style="border-left-color:var(--good)"><b>New session</b> reads the brief via <code>Read</code> and carries on from its <b>Next step</b> — the user types nothing.</div>
   </div>
 
   <h2>Why build (the ecosystem verdict)</h2>
@@ -102,37 +103,32 @@
   <h2>Key decisions</h2>
   <div class="panel">
     <ul>
-      <li><b>Reuse <code>/continue</code></b> for ingestion — zero new code; write the curated doc as the newest <code>.ccb/history</code> file.</li>
-      <li><b>Never use <code>ctx-transfer</code> to send</b> — it's a raw transcript dump, the exact thing to avoid.</li>
-      <li><b>Mode-aware, never breaks</b> — auto-chain only fires with a live <code>claude</code> pane; <code>handover_send.py</code> catches all exceptions → manual fallback.</li>
-      <li><b>Atomic write before any reset</b> — a dropped reset never loses the handover.</li>
-      <li><b>Personal infra</b> — hardcoded <code>CCB_LIB</code> + <code>py -3</code>; not publishable as-is.</li>
+      <li><b>Seed a fresh session</b>, don't reuse <code>/continue</code> — <code>claude "&lt;seed&gt;"</code> tells the new session to Read the brief and continue. More reliable than <code>@file</code> auto-expansion.</li>
+      <li><b>Never use <code>ctx-transfer</code></b> — it's a raw transcript dump, the exact thing to avoid.</li>
+      <li><b>Launch new, never self-reset</b> — continuation runs in a new tab/window; the current session is untouched. Kills the self-reset paradox.</li>
+      <li><b>Atomic write before launch</b> — a failed launch still leaves a recoverable brief + the manual <code>@path</code>.</li>
+      <li><b>Public CLI only, never breaks</b> — just the <code>wezterm</code> CLI + <code>claude.exe</code>; catches all exceptions → manual fallback. Still Windows/WezTerm-shaped.</li>
     </ul>
-    <h3>The finding that shaped mode-awareness</h3>
-    <pre>project_id: bfae8a9d…54e9c
-claude record: NONE   |   pane_id: None   |   providers: []</pre>
-    <p class="sub">The working session ran <b>direct</b>, not in a CCB pane — a skill can't <code>/new</code> its own REPL without a registered pane. So direct mode is primary; the paned auto-chain is a bonus.</p>
+    <h3>The findings that shaped it</h3>
+    <p class="sub">A skill <b>can't <code>/clear</code> its own REPL</b> → "automatic" needs an external driver, so launch a <b>new</b> session (works from any terminal) rather than depend on a CCB-registered pane. <code>claude.exe</code> is a real exe → WezTerm execs it directly with the seed as one argv element (no quoting). <code>wezterm cli spawn --new-window</code> works even when not inside WezTerm (verified: spawn → run → <code>get-text</code> → <code>kill-pane</code>).</p>
   </div>
 
   <h2>Build &amp; verification</h2>
   <div class="kv">
-    <code>SKILL.md</code><span>3 steps: compose → atomic-save → mode-aware send</span>
-    <code>handover_send.py</code><span>detect live <code>claude</code> pane → reset + push <code>/continue</code>; else print <code>@path</code> + next move. Never raises.</span>
+    <code>SKILL.md</code><span>3 steps: compose → atomic-save → launch fresh session</span>
+    <code>handover_send.py</code><span>spawn a fresh seeded <code>claude</code> (WezTerm new tab/window) that reads the brief + continues; else print <code>@path</code> + manual move. Public <code>wezterm</code> CLI only. Never raises.</span>
   </div>
-  <h3>Pilot (direct mode) — passed</h3>
-  <pre>Handover doc written.
-@C:/Users/aidan/git_projects/Assimilax/.ccb/history/claude-20260604-180640-handover.md
-Next: start a fresh session (/clear or a new window), then run /continue to load it.</pre>
-  <p class="sub"><span class="yes">✓</span> py_compile · registered · <code>/continue</code> resolves it (newest-wins) · exit 0. &nbsp;
-     <span class="warn">Unverified:</span> the paned auto-reset+<code>/continue</code> branch (no live pane existed).</p>
+  <h3>Pilot (auto-launch, full chain) — passed</h3>
+  <pre>Handover launched: fresh `claude` in a WezTerm new window (pane 2), reading the brief and continuing.
+@C:/Users/aidan/git_projects/_infrastructure/custom_claude_skills/.ccb/history/claude-pilot-test-handover.md</pre>
+  <p class="sub"><span class="yes">✓</span> Spawn mechanism verified in isolation (harmless <code>pwsh</code>) · synthetic brief whose Next step was "print <code>HANDOVER PILOT OK</code> and stop" → spawned session <b>read the brief and printed it</b>, then idled. No <code>/clear</code>, no <code>/continue</code>. py_compile · validate · exit 0. Pilot pane killed + test <code>.ccb/</code> removed.</p>
 
   <h2>Caveats &amp; follow-ups</h2>
   <ul>
-    <li>Pilot the <b>paned auto-chain</b> under a real CCB pane; bump <code>time.sleep(1.5)</code> if the 2nd command drops.</li>
-    <li>Paned mode resets the <i>current</i> pane (intended handoff semantics).</li>
-    <li>Windows/CCB coupling hardcoded — parameterise before any publish.</li>
-    <li><code>.ccb/</code> must be gitignored wherever <code>/handover</code>/<code>/continue</code> run.</li>
-    <li>Future: true cross-platform launch (<code>wt new-tab claude -p …</code> / <code>claude -p</code>) à la pchalasani.</li>
+    <li><b>WezTerm-only auto-launch.</b> No GUI running → cold-starts one (<code>wezterm start</code>); WezTerm absent → manual <code>@path</code> fallback. Other-terminal launch (<code>wt new-tab</code>) is future work.</li>
+    <li><b>Spawned-session permissions</b> — runs under the project's normal settings; <code>Read</code> auto-ran in the pilot, but a restrictive project may prompt once in the new window.</li>
+    <li><code>.ccb/</code> must be gitignored wherever <code>/handover</code>/<code>/continue</code> run — added to this repo's <code>.gitignore</code>.</li>
+    <li><b>Windows/WezTerm-shaped</b> — fallback paths (<code>~/.local/bin/claude.exe</code>, <code>C:/Program Files/WezTerm/wezterm.exe</code>) + <code>py -3</code>. Parameterise before any public release.</li>
   </ul>
 
   <div class="foot">

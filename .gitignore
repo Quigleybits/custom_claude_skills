@@ -4,3 +4,6 @@ Thumbs.db
 *.log
 .env
 .claude/settings.local.json
+.ccb/
+__pycache__/
+*.pyc

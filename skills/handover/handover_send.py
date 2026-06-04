@@ -5,19 +5,20 @@ After /handover writes the curated brief into ./.ccb/history/, this LAUNCHES a
 fresh Claude Code session, pre-seeded to read that brief and continue the work —
 so the user never has to type /clear + /continue by hand.
 
-Design:
-  * Non-destructive. The current session is left intact (it keeps the
-    "handover written + launched" report); a brand-new ``claude`` starts
-    alongside it, already working from the brief. No self-reset, no lost report.
-  * WezTerm-driven, public CLI only (no CCB internals -> no coupling):
-      - inside WezTerm (WEZTERM_PANE set) -> new TAB in the current window
-      - otherwise                         -> new WINDOW via ``cli spawn``,
-                                             else ``wezterm start`` (cold GUI)
-  * Seeded, not /continue. The new session is launched as
-      ``claude.exe "<read-the-brief-and-continue instruction + abs path>"``
-    which is more reliable than depending on @file auto-expansion.
-  * Never raises. Any failure (no wezterm, no claude, spawn error) degrades to
-    the manual message, so /handover always finishes cleanly.
+Launch: a NEW terminal window running ``claude "<seed>"``, where the seed tells
+the new session to Read the brief and carry on. The current session is left
+intact (non-destructive — it keeps the "launched" report).
+
+  * Windows: ``subprocess`` with ``CREATE_NEW_CONSOLE``. No third-party terminal
+    required — ``claude.exe`` gets its own console window. On Windows 11 that
+    console opens via the default terminal handler (Windows Terminal); on older
+    Windows it's a classic console. The seed is passed as one argv element (no
+    shell), so quoting is a non-issue even for a long multi-sentence prompt.
+  * Other OSes: auto-launch not yet wired -> manual fallback (@<path> + move).
+  * Never raises: any failure degrades to the manual message, so /handover always
+    finishes cleanly.
+
+No WezTerm / tmux / CCB internals — works from a plain terminal.
 """
 
 from __future__ import annotations
@@ -28,12 +29,12 @@ import subprocess
 import sys
 from pathlib import Path
 
-# Fallback locations if the binaries are not on PATH (this machine's installs).
+# Fallback location if `claude` is not on PATH (native installer dir on this machine).
 KNOWN_CLAUDE = Path.home() / ".local" / "bin" / "claude.exe"
-KNOWN_WEZTERM = Path(r"C:/Program Files/WezTerm/wezterm.exe")
 
-# Windows: keep the spawned GUI alive after this helper exits.
-_DETACHED = getattr(subprocess, "DETACHED_PROCESS", 0x00000008)
+# Give the spawned claude its own console window (Windows). NOT DETACHED_PROCESS:
+# a TUI needs a real console, and DETACHED_PROCESS would give it none.
+CREATE_NEW_CONSOLE = getattr(subprocess, "CREATE_NEW_CONSOLE", 0x00000010)
 
 
 def latest_handover() -> str | None:
@@ -42,16 +43,16 @@ def latest_handover() -> str | None:
     return files[0].as_posix() if files else None  # forward slashes — safe for Read on Windows
 
 
-def _resolve(name: str, known: Path) -> str | None:
-    found = shutil.which(name) or shutil.which(f"{name}.exe")
+def resolve_claude() -> str | None:
+    found = shutil.which("claude") or shutil.which("claude.exe")
     if found:
         return found
-    return str(known) if known.exists() else None
+    return str(KNOWN_CLAUDE) if KNOWN_CLAUDE.exists() else None
 
 
 def _seed(brief_path: str) -> str:
-    """The opening prompt for the fresh session (passed as one argv element —
-    no shell, so no quoting concerns)."""
+    """Opening prompt for the fresh session. Passed as one argv element (no shell),
+    so embedded punctuation/quotes are preserved verbatim."""
     return (
         "You are continuing a handed-over Claude Code session. "
         f"First, use the Read tool to read the handover brief at {brief_path} — "
@@ -76,34 +77,21 @@ def main() -> int:
         print("No handover brief found in ./.ccb/history — nothing to launch.", file=sys.stderr)
         return 0
 
-    wez = _resolve("wezterm", KNOWN_WEZTERM)
-    claude = _resolve("claude", KNOWN_CLAUDE)
-    if not wez or not claude:
-        manual(latest, reason=f"wezterm={'ok' if wez else 'missing'}, claude={'ok' if claude else 'missing'}")
+    claude = resolve_claude()
+    if not claude:
+        manual(latest, reason="claude executable not found on PATH or at ~/.local/bin/claude.exe")
+        return 0
+
+    if os.name != "nt":
+        # Auto-launch is wired for Windows only; elsewhere, hand back the manual move.
+        manual(latest, reason=f"auto-launch not wired for os={os.name!r}")
         return 0
 
     cwd = str(Path.cwd())
     seed = _seed(latest)
-    in_wezterm = bool((os.environ.get("WEZTERM_PANE") or "").strip())
-
     try:
-        # Primary: ask the running WezTerm GUI to spawn the session and tell us its pane id.
-        spawn = [wez, "cli", "spawn", "--cwd", cwd]
-        if not in_wezterm:
-            spawn.append("--new-window")
-        spawn += ["--", claude, seed]
-
-        cp = subprocess.run(spawn, capture_output=True, text=True, timeout=15)
-        if cp.returncode == 0:
-            pane = (cp.stdout or "").strip()
-            where = "new tab" if in_wezterm else "new window"
-            print(f"Handover launched: fresh `claude` in a WezTerm {where} (pane {pane}), reading the brief and continuing.")
-            print(f"@{latest}")
-            return 0
-
-        # Fallback: no running GUI to talk to -> cold-start one, detached so it survives this helper.
-        subprocess.Popen([wez, "start", "--cwd", cwd, "--", claude, seed], creationflags=_DETACHED, close_fds=True)
-        print("Handover launched: cold-started a WezTerm window running `claude`, reading the brief and continuing.")
+        proc = subprocess.Popen([claude, seed], cwd=cwd, creationflags=CREATE_NEW_CONSOLE, close_fds=True)
+        print(f"Handover launched: a fresh `claude` (pid {proc.pid}) is opening in a new terminal window, reading the brief and continuing.")
         print(f"@{latest}")
         return 0
     except Exception as exc:  # noqa: BLE001 — intentional catch-all: always degrade gracefully

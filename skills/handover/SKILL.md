@@ -57,14 +57,15 @@ py -3 "C:/Users/aidan/.claude/skills/handover/handover_send.py"
 This launches a **new** `claude`, pre-seeded to read the brief and continue — the user types
 nothing (no `/clear`, no `/continue`). The current session is left intact (non-destructive).
 
-- **WezTerm available** (the normal case): spawns a fresh `claude` — a new **tab** if this
-  session is already inside WezTerm, else a new **window** — seeded with "read `<brief>` and
-  continue from its Next step". `claude "<prompt>"` auto-runs the seed on boot.
-- **No WezTerm / launch fails**: prints `@<path>` + the manual next move. The script never
-  raises; any failure degrades to this message, so /handover always finishes cleanly.
+- **Windows** (no third-party terminal needed): spawns `claude.exe` in a **new console window**
+  via `CREATE_NEW_CONSOLE`, seeded with "read `<brief>` and continue from its Next step".
+  `claude "<prompt>"` auto-runs the seed on boot. On Win11 that console opens as Windows Terminal
+  (the default handler); on older Windows, a classic console.
+- **Other OS / launch fails**: prints `@<path>` + the manual next move. The script never raises;
+  any failure degrades to this message, so /handover always finishes cleanly.
 
 ## Output
 
 After Step 3, report exactly what the script printed: the saved brief path, and either
-"launched a fresh `claude` (new tab/window) already continuing" or — on the manual fallback —
+"launched a fresh `claude` in a new window, already continuing" or — on the manual fallback —
 the two-key next move (`/clear`, then `/continue`).

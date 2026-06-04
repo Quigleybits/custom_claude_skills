@@ -5,7 +5,7 @@
 > The operational skill itself lives next to this file: [`SKILL.md`](./SKILL.md) + [`handover_send.py`](./handover_send.py).
 >
 > **Status:** built + **pilot-verified end-to-end** (2026-06-04). `/handover` now auto-launches a
-> fresh, seeded `claude` session (new WezTerm tab/window) that reads the brief and continues — no
+> fresh, seeded `claude` session (a new terminal window) that reads the brief and continues — no
 > manual `/clear` + `/continue`. Verified by spawning a real session and confirming it read the
 > brief and acted on its Next step.
 
@@ -32,9 +32,9 @@ The user was ~80% there before we started. CCB already provides:
 |---|---|---|
 | `ctx-transfer` (CLI) | Dumps the last N conversation pairs from the session JSONL; `--output <file>` or `--send` to a provider | **Raw transcript dump** — deliberately *not* used by `/handover` |
 | `/continue` (skill) | Attaches the **newest** `./.ccb/history/*.md` into the session via an `@file` line | **Ingest half** — reused as-is |
-| `/autonew <provider>` (skill → `autonew` bin) | Sends `/new` to a provider's registered pane via `backend.send_text(pane_id, "/new")` | Fresh-session launch (paned mode) |
+| `/autonew <provider>` (skill → `autonew` bin) | Sends `/new` to a provider's registered pane via `backend.send_text(pane_id, "/new")` | Considered for the launch; **not used** — the shipped launcher spawns a new `claude` (see §5) |
 | `/debrief` + `/recon` | Session-end / session-start bookends | Composes with `/handover` |
-| `pane_registry.py` / `terminal.py` / `project_id.py` (CCB lib) | Pane registry + terminal backend (`send_text`, `is_alive`) keyed by a computed project id | The mechanism `/handover`'s auto-chain rides |
+| `pane_registry.py` / `terminal.py` / `project_id.py` (CCB lib) | Pane registry + terminal backend (`send_text`, `is_alive`) keyed by a computed project id | An earlier design rode this; **not used** by the shipped launcher (`CREATE_NEW_CONSOLE`, no CCB internals) |
 
 So the **only genuinely missing piece** was a *curated-prompt generator* glued to the launch/ingest pieces. That is exactly what `/handover` adds — nothing more.
 
@@ -58,7 +58,7 @@ Ran a 4-scout + synthesis workflow (run `wf_10b9d666-ab6`) across GitHub (`gh` s
 
 Everything else (incl. 2.2k★ pro-workflow, 1.9k★ softaworks, wshobson, davila7, mattpocock) is **generate-only → manual re-attach**, or **auto-inject via SessionStart hook but does not launch**. The tmux-pane senders (daystar7777, butler-skill-kit, steviepee/relay) need a pre-parked pane + tmux — wrong shape for Windows. One repo reported to nail it (`danielrosehill/Claude-Handover`) is now a **404** — treat as dead.
 
-**Conclusion:** adapting a tmux/Zellij tool to Windows is more work and more brittle than building a thin skill on the CCB stack the user already owns. → **Build.**
+**Conclusion:** adapting a tmux/Zellij tool to Windows is more work and more brittle than building our own thin skill. → **Build.** (The first cut leaned on the CCB stack; the shipped launcher dropped it for a zero-install `CREATE_NEW_CONSOLE` spawn — see §5.)
 
 ---
 
@@ -88,22 +88,22 @@ Two references are kept for provenance under [`docs/handover-research/`](../../d
    |  (1) Claude composes a curated handover BRIEF   <- the only "thinking" step
    |  (2) atomic-write -> ./.ccb/history/<utc>-handover.md   (newest-wins)
    v  (3) launch fresh session       ->  handover_send.py
-        |- WezTerm (normal):  wezterm cli spawn [--new-window] -- claude.exe "<seed>"
-        |                     seed = "read <brief> and continue from Next step"
-        |                     -> new claude boots, auto-reads the brief, carries on
-        `- no WezTerm / fail: print @<path> + "/clear then /continue"   (manual)
+        |- Windows:    Popen([claude.exe, "<seed>"], CREATE_NEW_CONSOLE)
+        |              seed = "read <brief> and continue from Next step"
+        |              -> claude boots in a new console window, auto-reads brief, carries on
+        `- other/fail: print @<path> + "/clear then /continue"   (manual)
 ```
 
 Non-destructive: the current session stays (keeps the launch report); the continuation runs in a
-new tab/window. `claude "<prompt>"` auto-runs the seed on boot, so the user types nothing.
+new window. `claude "<prompt>"` auto-runs the seed on boot, so the user types nothing.
 
 ### Key decisions
 
 1. **Seed a fresh session, don't reuse `/continue`.** The launcher starts `claude "<seed>"` where the seed tells the new session to Read the brief and continue. More reliable than depending on `/continue`'s `@file` auto-expansion, and it removes any ordering/ingest coupling. (`/continue` remains the manual-fallback path.)
 2. **Do not use `ctx-transfer`.** It's a raw transcript dump — the precise thing the ask says to avoid. Claude composes the curated brief instead.
-3. **Launch new, never self-reset.** The continuation runs in a **new** tab/window; the current session is untouched. Kills the old self-reset paradox (resetting the very pane that's reporting "what happened"), and a dropped launch never loses the brief.
+3. **Launch new, never self-reset.** The continuation runs in a **new** window; the current session is untouched. Kills the old self-reset paradox (resetting the very pane that's reporting "what happened"), and a dropped launch never loses the brief.
 4. **Atomic write before launch.** The brief is written (Write tool) before the launcher runs (matches the user's atomic-save discipline) — a failed launch still leaves a recoverable brief + the manual `@path` fallback.
-5. **Public CLI only, never breaks.** The launcher uses just the `wezterm` CLI (no CCB internals) + `claude.exe`, and catches **all** exceptions to degrade to the manual message. Still Windows/WezTerm-shaped (hardcoded fallback paths, `py -3`) — parameterise terminal + launcher before any public release.
+5. **Zero-install, never breaks.** No third-party terminal — `CREATE_NEW_CONSOLE` gives `claude.exe` its own window (Windows Terminal on Win11, classic console on Win10). No WezTerm, no tmux, no CCB internals. Catches **all** exceptions to degrade to the manual message. Auto-launch is currently Windows-only (`py -3` + native `claude.exe`); the OS branch is the single extension point for mac/Linux.
 
 ### Mechanism findings that shaped the design
 
@@ -111,12 +111,13 @@ new tab/window. `claude "<prompt>"` auto-runs the seed on boot, so the user type
   "automatic continuation" requires an *external* driver. Rather than depend on a CCB-registered pane
   (the user runs mostly *direct*, with no registered pane), the launcher starts a **new** session —
   which works from any terminal.
-- **`claude.exe` is a real executable** (`~/.local/bin/claude.exe`), so WezTerm can exec it directly:
-  `wezterm cli spawn -- claude.exe "<seed>"`. The seed is passed as one argv element (no shell), so
-  there are zero quoting concerns even for a long multi-sentence prompt.
-- **`wezterm cli spawn --new-window` works even when not inside WezTerm**, as long as a WezTerm GUI is
-  running (verified live: spawn → run → `get-text` → `kill-pane`). `claude "<prompt>"` then auto-runs
-  the seed on boot.
+- **No terminal emulator needed.** `subprocess.Popen([claude, seed], creationflags=CREATE_NEW_CONSOLE)`
+  gives `claude.exe` its own console window with zero third-party tools. On Windows 11 that console
+  opens via the default terminal handler (Windows Terminal); on older Windows it's a classic console.
+  (WezTerm was an early misstep — a niche install most users don't have.)
+- **No quoting headaches.** The seed is passed as one argv element (no shell, no `wt`/`cmd` parsing),
+  so even a long multi-sentence prompt with punctuation survives verbatim. `claude.exe` is a real
+  executable (`~/.local/bin/claude.exe`); `claude "<prompt>"` auto-runs the seed on boot.
 
 ---
 
@@ -142,7 +143,7 @@ Rules: redact secrets; no raw conversation logs; dense over complete.
 | File | Purpose |
 |---|---|
 | [`SKILL.md`](./SKILL.md) | The skill: 3 steps (compose -> atomic-save -> launch fresh session) |
-| [`handover_send.py`](./handover_send.py) | Companion: spawn a fresh seeded `claude` (WezTerm new tab/window) that reads the brief and continues; else print `@path` + manual next move. Public `wezterm` CLI only. Never raises. |
+| [`handover_send.py`](./handover_send.py) | Companion: spawn a fresh seeded `claude` in a new console window (`CREATE_NEW_CONSOLE`, no third-party terminal) that reads the brief and continues; else print `@path` + manual next move. Never raises. |
 
 Install convention (this repo): develop here → `npm run validate` → `npm run link` (symlinks `skills/handover/` into `~/.claude/skills/handover/`). **Do not** hand-place real files in `~/.claude/skills/` — that creates the stale-copy problem already logged in `todo.md` for `recon`.
 
@@ -153,33 +154,36 @@ Install convention (this repo): develop here → `npm run validate` → `npm run
 **Pilot (auto-launch, full chain), 2026-06-04 — passed:**
 
 - `py_compile` OK · `npm run validate` OK · skill registered in the session list.
-- WezTerm spawn mechanism verified in isolation first (harmless `pwsh` prog): `spawn --new-window`
-  with `WEZTERM_PANE` unset → returncode 0 + pane id → `get-text` confirmed output → `kill-pane`
-  cleaned up.
-- **End-to-end:** wrote a synthetic brief whose Next step was "print `HANDOVER PILOT OK` and stop"
-  → ran `handover_send.py` (WEZTERM_PANE unset → new window) → it spawned `claude` in WezTerm pane 2.
-  `get-text` on pane 2 showed the new session **read the brief and printed `HANDOVER PILOT OK`**, then
-  idled at the prompt. No `/clear`, no `/continue` typed. Pilot pane killed + test `.ccb/` removed.
+- `CREATE_NEW_CONSOLE` mechanism verified in isolation first (harmless `cmd`): new console window,
+  returncode 0 + child pid.
+- **End-to-end (seed behaviour, observed via a WezTerm `get-text` harness):** synthetic brief whose
+  Next step was "print `HANDOVER PILOT OK` and stop" → the spawned `claude` **read the brief and
+  printed the line**, then idled. No `/clear`, no `/continue` typed. (This proved the seed auto-runs;
+  the launcher then switched to `CREATE_NEW_CONSOLE` — same `claude.exe`, same seed.)
+- **End-to-end (shipped `CREATE_NEW_CONSOLE` launcher):** ran `handover_send.py` → it spawned
+  `claude.exe` (pid printed) in a new console window; `tasklist` confirmed the booted process
+  (~450 MB). Killed + test `.ccb/` removed.
 - Exit 0 ✓.
 
-**Confirmed:** the seed auto-runs on boot; `Read` of the brief needed no permission prompt.
+**Confirmed:** the seed auto-runs on boot; `Read` of the brief needed no permission prompt; no
+third-party terminal required.
 
 ---
 
 ## 9. Caveats & open follow-ups
 
-- **WezTerm-only auto-launch.** The launcher drives WezTerm via its public CLI. In a plain console /
-  VS Code integrated terminal with **no** WezTerm GUI running, it cold-starts a WezTerm window
-  (`wezterm start`); if WezTerm isn't installed at all, it degrades to the manual `@path` message.
-  Cross-platform / other-terminal launch (`wt new-tab`, `claude` elsewhere) is future work.
+- **Windows-only auto-launch (no third-party terminal).** Uses `CREATE_NEW_CONSOLE`, so it works on
+  any Windows machine with no install (WezTerm/tmux not required). On non-Windows it degrades to the
+  manual `@path` message; wiring mac/Linux (e.g. `open -a Terminal`, `x-terminal-emulator`) is the one
+  remaining extension point — the `os.name` branch in `handover_send.py`.
 - **Spawned-session permissions.** The new session runs under the project's normal permission
   settings. `Read` of the brief auto-ran in the pilot; if a project restricts `Read`, the first action
   may prompt in the new window (user approves once).
 - **`.ccb/` must be gitignored** in any project where `/handover` or `/continue` runs (scratch, never
   commit). Added to this repo's `.gitignore`.
-- **Windows/WezTerm-shaped.** Fallback binary paths (`~/.local/bin/claude.exe`,
-  `C:/Program Files/WezTerm/wezterm.exe`) and `py -3` are Windows defaults. Parameterise terminal +
-  launcher before any public release.
+- **Windows-shaped defaults.** The fallback `claude` path (`~/.local/bin/claude.exe`) and the `py -3`
+  launcher in `SKILL.md` are Windows defaults. Generalise the `claude` lookup + launcher per-OS before
+  any public release.
 
 ---
 

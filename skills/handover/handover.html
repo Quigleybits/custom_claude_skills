@@ -59,15 +59,15 @@
     <span class="badge good">Built 2026-06-04</span>
     <span class="badge good">Validated · 512 words</span>
     <span class="badge good">Pilot ✓ end-to-end auto-launch</span>
-    <span class="badge good">No CCB internals — wezterm CLI only</span>
-    <span class="badge">Windows / WezTerm-shaped</span>
+    <span class="badge good">No third-party terminal — CREATE_NEW_CONSOLE</span>
+    <span class="badge">Windows (zero-install)</span>
   </div>
 
   <h2>The idea in one line</h2>
   <div class="panel">
     Compose the <b>curated brief</b>, then <b>launch a fresh <code>claude</code> seeded to read it and continue</b> —
-    a new WezTerm tab (if already inside WezTerm) or window. Non-destructive: the old session stays put.
-    Uses only the public <code>wezterm</code> CLI + <code>claude.exe</code> — no tmux, no Zellij, no CCB internals.
+    in a <b>new console window</b> (<code>CREATE_NEW_CONSOLE</code>; opens as Windows Terminal on Win11). Non-destructive: the old session stays put.
+    Zero third-party tools — no WezTerm, no tmux, no Zellij, no CCB internals.
   </div>
 
   <h2>Flow</h2>
@@ -78,8 +78,8 @@
     <div class="arrow">▼</div>
     <div class="step"><span class="n">3</span><b>Launch fresh session</b> → <code>handover_send.py</code></div>
     <div class="branch">
-      <div class="step paned"><b>WezTerm</b> (normal)<br><code>wezterm cli spawn</code> new <b>tab/window</b> → <code>claude.exe "&lt;seed&gt;"</code> → <span class="yes">auto-reads brief + continues</span></div>
-      <div class="step direct"><b>No WezTerm / fail</b><br>print <code>@path</code> + <span class="warn">"/clear then /continue"</span></div>
+      <div class="step paned"><b>Windows</b><br><code>Popen([claude.exe, "&lt;seed&gt;"], CREATE_NEW_CONSOLE)</code> → <span class="yes">new console window auto-reads brief + continues</span></div>
+      <div class="step direct"><b>Other OS / fail</b><br>print <code>@path</code> + <span class="warn">"/clear then /continue"</span></div>
     </div>
     <div class="arrow">▼</div>
     <div class="step" style="border-left-color:var(--good)"><b>New session</b> reads the brief via <code>Read</code> and carries on from its <b>Next step</b> — the user types nothing.</div>
@@ -105,30 +105,30 @@
     <ul>
       <li><b>Seed a fresh session</b>, don't reuse <code>/continue</code> — <code>claude "&lt;seed&gt;"</code> tells the new session to Read the brief and continue. More reliable than <code>@file</code> auto-expansion.</li>
       <li><b>Never use <code>ctx-transfer</code></b> — it's a raw transcript dump, the exact thing to avoid.</li>
-      <li><b>Launch new, never self-reset</b> — continuation runs in a new tab/window; the current session is untouched. Kills the self-reset paradox.</li>
+      <li><b>Launch new, never self-reset</b> — continuation runs in a new window; the current session is untouched. Kills the self-reset paradox.</li>
       <li><b>Atomic write before launch</b> — a failed launch still leaves a recoverable brief + the manual <code>@path</code>.</li>
-      <li><b>Public CLI only, never breaks</b> — just the <code>wezterm</code> CLI + <code>claude.exe</code>; catches all exceptions → manual fallback. Still Windows/WezTerm-shaped.</li>
+      <li><b>Zero-install, never breaks</b> — no third-party terminal; <code>CREATE_NEW_CONSOLE</code> gives <code>claude.exe</code> its own window. Catches all exceptions → manual fallback. Windows-only for now.</li>
     </ul>
     <h3>The findings that shaped it</h3>
-    <p class="sub">A skill <b>can't <code>/clear</code> its own REPL</b> → "automatic" needs an external driver, so launch a <b>new</b> session (works from any terminal) rather than depend on a CCB-registered pane. <code>claude.exe</code> is a real exe → WezTerm execs it directly with the seed as one argv element (no quoting). <code>wezterm cli spawn --new-window</code> works even when not inside WezTerm (verified: spawn → run → <code>get-text</code> → <code>kill-pane</code>).</p>
+    <p class="sub">A skill <b>can't <code>/clear</code> its own REPL</b> → "automatic" needs an external driver, so launch a <b>new</b> session (works from any terminal) rather than depend on a CCB-registered pane. No terminal emulator needed: <code>subprocess.Popen([claude, seed], creationflags=CREATE_NEW_CONSOLE)</code> opens a console window (Windows Terminal on Win11). The seed is one argv element (no shell/<code>wt</code>/<code>cmd</code> parsing) → no quoting headaches. <i>(WezTerm was an early misstep — a niche install most users lack.)</i></p>
   </div>
 
   <h2>Build &amp; verification</h2>
   <div class="kv">
     <code>SKILL.md</code><span>3 steps: compose → atomic-save → launch fresh session</span>
-    <code>handover_send.py</code><span>spawn a fresh seeded <code>claude</code> (WezTerm new tab/window) that reads the brief + continues; else print <code>@path</code> + manual move. Public <code>wezterm</code> CLI only. Never raises.</span>
+    <code>handover_send.py</code><span>spawn a fresh seeded <code>claude</code> in a new console window (<code>CREATE_NEW_CONSOLE</code>, no third-party terminal) that reads the brief + continues; else print <code>@path</code> + manual move. Never raises.</span>
   </div>
   <h3>Pilot (auto-launch, full chain) — passed</h3>
-  <pre>Handover launched: fresh `claude` in a WezTerm new window (pane 2), reading the brief and continuing.
-@C:/Users/aidan/git_projects/_infrastructure/custom_claude_skills/.ccb/history/claude-pilot-test-handover.md</pre>
-  <p class="sub"><span class="yes">✓</span> Spawn mechanism verified in isolation (harmless <code>pwsh</code>) · synthetic brief whose Next step was "print <code>HANDOVER PILOT OK</code> and stop" → spawned session <b>read the brief and printed it</b>, then idled. No <code>/clear</code>, no <code>/continue</code>. py_compile · validate · exit 0. Pilot pane killed + test <code>.ccb/</code> removed.</p>
+  <pre>Handover launched: a fresh `claude` (pid 7968) is opening in a new terminal window, reading the brief and continuing.
+@C:/Users/aidan/git_projects/_infrastructure/custom_claude_skills/.ccb/history/claude-pilot2.md</pre>
+  <p class="sub"><span class="yes">✓</span> <code>CREATE_NEW_CONSOLE</code> verified in isolation (harmless <code>cmd</code>) · seed behaviour proven via a WezTerm <code>get-text</code> harness (brief whose Next step was "print <code>HANDOVER PILOT OK</code> and stop" → spawned session <b>read the brief and printed it</b>) · shipped launcher spawned <code>claude.exe</code> in a new console (<code>tasklist</code> confirmed ~450 MB). py_compile · validate · exit 0. Test process killed + <code>.ccb/</code> removed.</p>
 
   <h2>Caveats &amp; follow-ups</h2>
   <ul>
-    <li><b>WezTerm-only auto-launch.</b> No GUI running → cold-starts one (<code>wezterm start</code>); WezTerm absent → manual <code>@path</code> fallback. Other-terminal launch (<code>wt new-tab</code>) is future work.</li>
+    <li><b>Windows-only auto-launch (no third-party terminal).</b> <code>CREATE_NEW_CONSOLE</code> works on any Windows machine, no install. Non-Windows → manual <code>@path</code> fallback; mac/Linux launch is the one remaining extension point.</li>
     <li><b>Spawned-session permissions</b> — runs under the project's normal settings; <code>Read</code> auto-ran in the pilot, but a restrictive project may prompt once in the new window.</li>
     <li><code>.ccb/</code> must be gitignored wherever <code>/handover</code>/<code>/continue</code> run — added to this repo's <code>.gitignore</code>.</li>
-    <li><b>Windows/WezTerm-shaped</b> — fallback paths (<code>~/.local/bin/claude.exe</code>, <code>C:/Program Files/WezTerm/wezterm.exe</code>) + <code>py -3</code>. Parameterise before any public release.</li>
+    <li><b>Windows-shaped defaults</b> — fallback <code>claude</code> path (<code>~/.local/bin/claude.exe</code>) + <code>py -3</code>. Generalise per-OS before any public release.</li>
   </ul>
 
   <div class="foot">

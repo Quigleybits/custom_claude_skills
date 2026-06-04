@@ -39,3 +39,4 @@ docs/             # Project documentation
 
 - **recon** — Full-spectrum project reconnaissance and doc health audit
 - **debrief** — Session-end cleanup, discipline-aware knowledge capture, and documentation routing
+- **handover** — Hand the session to a fresh seeded `claude` (new window, zero-install via `CREATE_NEW_CONSOLE`) that auto-reads a curated brief and continues. Dev-only; publish deferred.

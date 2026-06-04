@@ -14,6 +14,8 @@ Side-by-side comparison of all skills in the @quigleybits/claude-skills suite. U
 | 4 | `/zero` | Align the sights |
 | 5 | `/doctrine` | Encode lessons into law |
 
+> **Also in the repo, outside the public suite:** `/handover` — hand off to a fresh seeded `claude` session that auto-reads a curated brief and continues (zero-install, Windows). Dev-only personal infra; publish decision deferred (see `todo.md`). Writeup: [`skills/handover/handover.md`](../skills/handover/handover.md).
+
 ---
 
 ## /recon vs /debrief (Session Bookends)

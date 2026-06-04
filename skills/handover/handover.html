@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>/handover — design, research &amp; build</title>
+<style>
+  :root{
+    --bg:#0f1115; --panel:#171a21; --panel2:#1e222b; --ink:#e6e8ee; --muted:#9aa3b2;
+    --line:#2a2f3a; --accent:#7aa2f7; --good:#7ee787; --warn:#e3b341; --bad:#f78a8a;
+    --chip:#252b36;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:15px/1.6 ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial}
+  .wrap{max-width:960px;margin:0 auto;padding:40px 24px 80px}
+  h1{font-size:30px;margin:0 0 4px;letter-spacing:-.02em}
+  h1 code{color:var(--accent);background:none;padding:0}
+  h2{font-size:19px;margin:38px 0 12px;padding-top:14px;border-top:1px solid var(--line);letter-spacing:-.01em}
+  h3{font-size:15px;margin:20px 0 8px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+  p{margin:10px 0}
+  code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.86em;
+    background:var(--chip);padding:1.5px 6px;border-radius:5px}
+  a{color:var(--accent);text-decoration:none} a:hover{text-decoration:underline}
+  .sub{color:var(--muted);font-size:14px;margin-top:0}
+  .badges{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0 6px}
+  .badge{font-size:12px;padding:4px 10px;border-radius:999px;border:1px solid var(--line);background:var(--panel)}
+  .badge.good{color:var(--good);border-color:#2e5b39} .badge.warn{color:var(--warn);border-color:#5b4d22}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px 20px;margin:14px 0}
+  table{width:100%;border-collapse:collapse;margin:12px 0;font-size:13.5px}
+  th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{color:var(--muted);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.04em}
+  tr:last-child td{border-bottom:none}
+  .fit{font-variant-numeric:tabular-nums;font-weight:700}
+  .yes{color:var(--good)} .partial{color:var(--warn)} .no{color:var(--bad)}
+  ul{margin:8px 0;padding-left:20px} li{margin:5px 0}
+  /* flow diagram */
+  .flow{display:flex;flex-direction:column;gap:0;margin:8px 0 4px}
+  .step{background:var(--panel2);border:1px solid var(--line);border-left:3px solid var(--accent);
+    border-radius:8px;padding:11px 14px;font-size:14px}
+  .step b{color:var(--ink)} .step .n{color:var(--accent);font-weight:700;margin-right:8px}
+  .arrow{align-self:center;color:var(--muted);font-size:18px;line-height:1.1;margin:3px 0}
+  .branch{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:4px 0}
+  .branch .step{border-left-color:var(--muted)}
+  .branch .paned{border-left-color:var(--good)} .branch .direct{border-left-color:var(--warn)}
+  .kv{display:grid;grid-template-columns:max-content 1fr;gap:6px 16px;font-size:14px}
+  .kv code{white-space:nowrap}
+  pre{background:#0b0d12;border:1px solid var(--line);border-radius:8px;padding:12px 14px;
+    overflow:auto;font-size:12.5px;color:#cdd3df}
+  .foot{color:var(--muted);font-size:13px;margin-top:30px;border-top:1px solid var(--line);padding-top:14px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1><code>/handover</code> — design, research &amp; build</h1>
+  <p class="sub">Hand the current session off to a fresh one: generate a curated continuation prompt, route it into a new Claude session via the CCB stack.</p>
+  <div class="badges">
+    <span class="badge good">Built 2026-06-04</span>
+    <span class="badge good">Validated · 461 words</span>
+    <span class="badge good">Pilot ✓ direct mode</span>
+    <span class="badge warn">Paned auto-chain unverified</span>
+    <span class="badge">Personal / CCB-coupled</span>
+  </div>
+
+  <h2>The idea in one line</h2>
+  <div class="panel">
+    Add only the <b>missing half</b> — a curated-prompt generator — and reuse everything CCB already gives you
+    (<code>/continue</code> to ingest, <code>autonew</code> to launch, the pane registry to drive). No tmux, no Zellij, no new runtime deps.
+  </div>
+
+  <h2>Flow</h2>
+  <div class="flow">
+    <div class="step"><span class="n">1</span><b>Compose</b> a curated handover <i>prompt</i> (Goal · Status · Decisions+why · Failed-approaches · Files+lines · Next step · Don't-do · Suggested skills). <i>The only new capability.</i></div>
+    <div class="arrow">▼</div>
+    <div class="step"><span class="n">2</span><b>Atomic-write</b> → <code>./.ccb/history/&lt;utc&gt;-handover.md</code> &nbsp;(newest-wins)</div>
+    <div class="arrow">▼</div>
+    <div class="step"><span class="n">3</span><b>Mode-aware send</b> → <code>handover_send.py</code></div>
+    <div class="branch">
+      <div class="step paned"><b>CCB-paned</b><br><code>autonew claude</code> (/new) → push <code>/continue</code> → <span class="yes">one step</span></div>
+      <div class="step direct"><b>Direct</b> (no pane)<br>print <code>@path</code> + <span class="warn">"/clear then /continue"</span></div>
+    </div>
+    <div class="arrow">▼</div>
+    <div class="step" style="border-left-color:var(--good)"><b><code>/continue</code></b> (existing skill, untouched) attaches the newest <code>./.ccb/history/*.md</code> via <code>@file</code></div>
+  </div>
+
+  <h2>Why build (the ecosystem verdict)</h2>
+  <p>A 4-scout + synthesis workflow (<code>wf_10b9d666-ab6</code>) read ~20 verified tools. <b>No perfect Windows drop-in exists.</b>
+     Two live tools do both halves but are mac/Zellij-shaped; the rest only write a file or auto-inject-without-launch.</p>
+  <table>
+    <thead><tr><th>Tool</th><th>Fit</th><th>Both halves?</th><th>Windows snag</th></tr></thead>
+    <tbody>
+      <tr><td><a href="https://github.com/pchalasani/claude-code-tools">pchalasani/claude-code-tools</a> — <code>&gt;handoff</code></td><td class="fit">82</td><td class="yes">✅ <code>claude -p</code> spawn + <code>--resume</code></td><td>tmux + uv + clipboard trigger</td></tr>
+      <tr><td><a href="https://github.com/qdhenry/Claude-Command-Suite">qdhenry/Claude-Command-Suite</a> (1.3k★)</td><td class="fit">66</td><td class="yes">✅ structured → auto-spawn</td><td>Zellij; hardcoded mac claude path</td></tr>
+      <tr><td><a href="https://github.com/thepushkarp/handoff">thepushkarp/handoff</a></td><td class="fit">58</td><td class="partial">⚠️ injects, doesn't launch</td><td>best Windows fit (bash hooks)</td></tr>
+      <tr><td><a href="https://github.com/vmihalis/claude-handover">vmihalis/claude-handover</a></td><td class="fit">40</td><td class="no">❌ file-only, manual</td><td>clean; best schema template</td></tr>
+      <tr><td><a href="https://github.com/scottconverse/claude-code-handoff-cowork">scottconverse/handoff-cowork</a></td><td class="fit">46</td><td class="partial">⚠️ inject, no launch</td><td>Windows-hardened hooks</td></tr>
+    </tbody>
+  </table>
+  <p class="sub">Borrowed into our schema: <code>argument-hint</code>, "suggested skills", "reference don't duplicate", redaction (mattpocock) · the "Don't do" anti-loop guard (vmihalis) · "gather state, don't ask" + quick-start (claude-handoff-skill / qdhenry).</p>
+
+  <h2>Key decisions</h2>
+  <div class="panel">
+    <ul>
+      <li><b>Reuse <code>/continue</code></b> for ingestion — zero new code; write the curated doc as the newest <code>.ccb/history</code> file.</li>
+      <li><b>Never use <code>ctx-transfer</code> to send</b> — it's a raw transcript dump, the exact thing to avoid.</li>
+      <li><b>Mode-aware, never breaks</b> — auto-chain only fires with a live <code>claude</code> pane; <code>handover_send.py</code> catches all exceptions → manual fallback.</li>
+      <li><b>Atomic write before any reset</b> — a dropped reset never loses the handover.</li>
+      <li><b>Personal infra</b> — hardcoded <code>CCB_LIB</code> + <code>py -3</code>; not publishable as-is.</li>
+    </ul>
+    <h3>The finding that shaped mode-awareness</h3>
+    <pre>project_id: bfae8a9d…54e9c
+claude record: NONE   |   pane_id: None   |   providers: []</pre>
+    <p class="sub">The working session ran <b>direct</b>, not in a CCB pane — a skill can't <code>/new</code> its own REPL without a registered pane. So direct mode is primary; the paned auto-chain is a bonus.</p>
+  </div>
+
+  <h2>Build &amp; verification</h2>
+  <div class="kv">
+    <code>SKILL.md</code><span>3 steps: compose → atomic-save → mode-aware send</span>
+    <code>handover_send.py</code><span>detect live <code>claude</code> pane → reset + push <code>/continue</code>; else print <code>@path</code> + next move. Never raises.</span>
+  </div>
+  <h3>Pilot (direct mode) — passed</h3>
+  <pre>Handover doc written.
+@C:/Users/aidan/git_projects/Assimilax/.ccb/history/claude-20260604-180640-handover.md
+Next: start a fresh session (/clear or a new window), then run /continue to load it.</pre>
+  <p class="sub"><span class="yes">✓</span> py_compile · registered · <code>/continue</code> resolves it (newest-wins) · exit 0. &nbsp;
+     <span class="warn">Unverified:</span> the paned auto-reset+<code>/continue</code> branch (no live pane existed).</p>
+
+  <h2>Caveats &amp; follow-ups</h2>
+  <ul>
+    <li>Pilot the <b>paned auto-chain</b> under a real CCB pane; bump <code>time.sleep(1.5)</code> if the 2nd command drops.</li>
+    <li>Paned mode resets the <i>current</i> pane (intended handoff semantics).</li>
+    <li>Windows/CCB coupling hardcoded — parameterise before any publish.</li>
+    <li><code>.ccb/</code> must be gitignored wherever <code>/handover</code>/<code>/continue</code> run.</li>
+    <li>Future: true cross-platform launch (<code>wt new-tab claude -p …</code> / <code>claude -p</code>) à la pchalasani.</li>
+  </ul>
+
+  <div class="foot">
+    Research workflow <code>wf_10b9d666-ab6</code> · companion to <a href="./handover.md">handover.md</a> · skill: <a href="./SKILL.md">SKILL.md</a> + <a href="./handover_send.py">handover_send.py</a> · reference: <code>docs/handover-research/</code> (<code>claude-handoff-skill@1.0.0</code>, kept out of the skill dir). Author: Aidan (Quigleybits) + Claude.
+  </div>
+
+</div>
+</body>
+</html>

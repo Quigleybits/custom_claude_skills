@@ -1,0 +1,29 @@
+{
+  "name": "claude-handoff-skill",
+  "version": "1.0.0",
+  "description": "Claude Code skill that generates a paste-ready session handoff prompt so the next session can pick up cold.",
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "claude-handoff-skill": "bin/claude-handoff-skill.js"
+  },
+  "files": [
+    "skill",
+    "bin",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "keywords": [
+    "claude-code",
+    "claude",
+    "skill",
+    "handoff",
+    "session"
+  ],
+  "scripts": {
+    "test": "node bin/claude-handoff-skill.js --help"
+  }
+}

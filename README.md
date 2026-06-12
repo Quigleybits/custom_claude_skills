@@ -1,5 +1,7 @@
 # @quigleybits/claude-skills
 
+[![npm version](https://img.shields.io/npm/v/%40quigleybits%2Fclaude-skills)](https://www.npmjs.com/package/@quigleybits/claude-skills) [![npm downloads](https://img.shields.io/npm/dm/%40quigleybits%2Fclaude-skills)](https://www.npmjs.com/package/@quigleybits/claude-skills) [![license: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
 Custom skills (slash commands) for [Claude Code](https://claude.ai/claude-code).
 
 ## Install

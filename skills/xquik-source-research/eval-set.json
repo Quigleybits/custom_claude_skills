@@ -1,0 +1,40 @@
+{
+  "tests": [
+    {
+      "query": "Collect a sourced packet of recent posts about our launch for market research",
+      "should_trigger": true
+    },
+    {
+      "query": "Use public X posts to support this competitor analysis with URLs and timestamps",
+      "should_trigger": true
+    },
+    {
+      "query": "Check whether these tweet URLs support the claim in our brief",
+      "should_trigger": true
+    },
+    {
+      "query": "Build a small evidence packet from X search results for the product team",
+      "should_trigger": true
+    },
+    {
+      "query": "Monitor public posts for this brand term and return a cited sample",
+      "should_trigger": true
+    },
+    {
+      "query": "Create a spreadsheet from this CSV file",
+      "should_trigger": false
+    },
+    {
+      "query": "Run recon on this repository and summarize stale docs",
+      "should_trigger": false
+    },
+    {
+      "query": "End the session and commit my changes",
+      "should_trigger": false
+    },
+    {
+      "query": "Rewrite this paragraph in a friendlier tone",
+      "should_trigger": false
+    }
+  ]
+}

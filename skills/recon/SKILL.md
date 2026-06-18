@@ -65,6 +65,7 @@ digraph recon {
 
 - **Merge small categories** — don't spawn a scout for <3 files. Combine into fewer scouts (aim for 2-4 total).
 - **Parallel deep-read kickoff** — in the same message as scout dispatch, also Read the primary todo, primary spec, and any file modified in the last 24 hours. This overlaps scout wait time with useful reads.
+- **Scout model: Sonnet, not Haiku.** Dispatch scouts on a Sonnet-class model (`model: sonnet`). Haiku-class scouts paraphrase dense plan/spec/design docs plausibly-but-wrong — observed 2026-06-18: a Haiku scout fabricated an active plan's entire contents ("validation, error handling, performance" for a plan that was actually anti-pollution + dedup). Recon synthesis quality depends on accurate scout summaries; pay the small delta.
 
 Scout instructions (Explore type):
 ```
@@ -99,9 +100,10 @@ Read **remaining** files in main context (some already read from Phase 2 kickoff
 - Has staleness signals or codebase discrepancies
 - Contains task lists or next steps
 - Is the primary spec or todo
+- **Is a `lessons_learnt.md` — ALWAYS read.** Surface its recent entries so past corrections/gotchas inform this session (don't repeat a logged mistake).
 - Modified in the last 7 days
 
-**Verify scout claims:** While reading, cross-check any specific values scouts reported (counts, metrics, status labels, "best" results). Scouts use a smaller model and may misinterpret data. Flag corrections in Phase 4.
+**Verify scout claims:** While reading, cross-check any specific values scouts reported (counts, metrics, status labels, "best" results). Even on Sonnet a scout can misread a dense doc (a Haiku scout once fabricated a plan's whole contents) — so the **primary spec + active plan are always read in main context, never trusted from a scout summary alone**. Flag corrections in Phase 4.
 
 **Budget: up to 25,000 tokens** for deep reads. If qualifying files exceed this, prioritize: primary spec > primary todo > files with discrepancies > recently modified.
 

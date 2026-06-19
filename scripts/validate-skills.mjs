@@ -32,8 +32,9 @@ async function validateSkill(skillDir) {
 
   const content = await readFile(skillFile, 'utf-8');
 
-  // Parse frontmatter
-  const fmMatch = content.match(/^---\n([\s\S]*?)\n---/);
+  // Parse frontmatter — tolerate a leading UTF-8 BOM and CRLF line endings
+  // (Windows editors save CRLF; an LF-only check silently rejects valid skills).
+  const fmMatch = content.match(/^﻿?---\r?\n([\s\S]*?)\r?\n---/);
   if (!fmMatch) {
     error(name, 'Missing YAML frontmatter (must start with ---)');
     return;

@@ -1,0 +1,26 @@
+# Normalize line endings: store text as LF in the repo so editor-driven
+# CRLF churn never reaches committed files (a CRLF SKILL.md broke validation).
+* text=auto eol=lf
+
+# Explicit text types
+*.md    text eol=lf
+*.mjs   text eol=lf
+*.js    text eol=lf
+*.cjs   text eol=lf
+*.json  text eol=lf
+*.py    text eol=lf
+*.html  text eol=lf
+*.css   text eol=lf
+*.yml   text eol=lf
+*.yaml  text eol=lf
+*.sh    text eol=lf
+*.txt   text eol=lf
+
+# Binary — never normalize
+*.pyc   binary
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.gif   binary
+*.ico   binary
+*.pdf   binary

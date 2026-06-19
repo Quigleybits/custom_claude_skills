@@ -7,17 +7,32 @@ description: "Use when ending a work session to clean up loose ends, capture kno
 
 Session-end skill. Cleans up loose ends, captures knowledge through the 5 engineering disciplines, routes findings to persistence targets, and commits everything cleanly. Pairs with `/recon` — recon opens sessions, debrief closes them.
 
-**Always runs all 6 phases in order.** Parallel tool calls within a phase are encouraged for speed.
+**Always runs all 6 phases in order. Output each phase heading before executing it:**
 
-## Phase Architecture
+```
+## Phase 1: ASSESS
+[phase output]
+## Phase 2: TRIAGE
+[phase output]
+## Phase 3: COMMIT WORK
+[phase output]
+## Phase 4: DISCIPLINE AUDIT
+[phase output]
+## Phase 5: ROUTE KNOWLEDGE
+[phase output]
+## Phase 6: COMMIT & REPORT
+[phase output]
+```
 
-Phase gates are strict — complete one before starting the next.
+**This structure is mandatory.** Do not reorganize, rename, merge, or skip phases. Do not use custom section headings. Complete one phase before starting the next.
+
+**Double-debrief guard:** Before Phase 1, check `git log -1 --format=%s`. If the last commit message starts with `debrief:`, skip Phases 1-3 entirely (output "Phases 1-3 skipped — prior debrief detected") and jump straight to Phase 4.
 
 | Phase | Name | Action |
 |-------|------|--------|
 | 1 | ASSESS | Scan git status, git diff, TODOs/debug output in uncommitted changes. Categorize as: **Trivial** (formatting, debug cruft, staging) · **Substantive** (failing tests, lint errors) · **Deferred** (too big for session-end). |
 | 2 | TRIAGE | Trivial → auto-fix silently. Substantive → prompt user `(y/N)`, default defer. Deferred → log for next session. **Never modify logic, delete files, or alter public APIs without approval.** Present cleanup summary when done. |
-| 3 | COMMIT WORK | Auto-commit user's work + triage fixes. Match repo's commit style. If pre-commit hook fails → present error, ask user. If user declines → proceed with uncommitted changes, note in report. **Guard:** if last commit starts with `debrief:`, skip Phases 1-3. |
+| 3 | COMMIT WORK | Auto-commit user's work + triage fixes. Match repo's commit style. If pre-commit hook fails → present error, ask user. If user declines → proceed with uncommitted changes, note in report. |
 | 4 | DISCIPLINE AUDIT | Single pass across 5 disciplines + enhancement lenses. See below. |
 | 5 | ROUTE KNOWLEDGE | Write findings to correct targets. See routing table below. |
 | 6 | COMMIT & REPORT | Auto-commit debrief's doc/memory changes. Output terse action summary. |
@@ -65,7 +80,7 @@ Tag each finding: **Prompt Craft** (guardrails, instructions) · **Context** (cr
 
 **Always apply:**
 - **Compounding Test** — "Will this make the next session better?" If yes, capture. If it's just a record of what happened, skip.
-- **Capture Consistency** — Read MEMORY.md index before writing. Tag each finding: discipline, routing target, new vs update.
+- **Capture Consistency** — **Before routing any finding, read MEMORY.md (if it exists) and check for duplicates or related entries.** Tag each finding: discipline, routing target, new vs update. If no MEMORY.md exists, note that explicitly.
 
 **Apply when triggered:**
 - **Cross-Category** — If a finding touches multiple disciplines, grep CLAUDE.md and memory for related entries.
@@ -90,6 +105,8 @@ Route by **durability** — how the finding persists, not what category it fits:
 | **Todo** | Deferred loose ends, work items too big for session-end | Append to project's existing todo file. If no todo file exists, create a `deferred.md` memory file (type: project). |
 | **Existing docs** | Finding directly contradicts or fills a gap in existing documentation | Edit in place |
 
+**Before routing:** Read MEMORY.md and CLAUDE.md to check for existing entries. State what you found (or that they don't exist).
+
 **Rules:** Update over create. Minimal edits — append, don't restructure. No duplicates — read before writing.
 
 ---
@@ -108,7 +125,12 @@ Deferred:
 - [next-session items]
 ```
 
-**Report** — terse, adaptive. Omit empty sections:
+**Report** — terse, adaptive. **If a section has zero items, delete it entirely — do not print the heading or write "none".**
+
+If there are zero findings and zero triage actions, the entire report is 1-2 sentences:
+> Workspace clean, no findings. Deferred: [items] or "nothing to defer."
+
+Otherwise, include only sections that have content:
 
 ```
 SESSION CONTEXT
@@ -128,8 +150,6 @@ Commits:
 - [hash] "message" (user work)
 - [hash] "message" (debrief updates)
 ```
-
-Light sessions shrink to 3-4 lines.
 
 ---
 

@@ -57,7 +57,7 @@ Score: **P** (pass) / **F** (fail) / **-** (N/A). High-signal subset for quick r
 | # | Eval | Pass criteria |
 |---|------|--------------|
 | 28 | **Report leads with actions** | DEBRIEF ACTIONS has substance. Session context is 2-3 bullets max. |
-| 29 | **Adaptive sizing** | Heavy session -> full report. Light session -> 3-4 lines. Empty sections omitted. |
+| 29 | **Adaptive report sizing** | The Phase 6 **report** scales: heavy session -> full report; light/clean session -> 1-2 sentences. Phase headings are lightweight markers (always present, terse); empty report sections omitted. |
 | 30 | **Commit hashes included** | Report lists actual hashes for both commits. |
 | 31 | **Deferred items listed** | Next-session items appear in the report. |
 

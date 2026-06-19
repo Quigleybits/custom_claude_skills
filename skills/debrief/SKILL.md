@@ -7,7 +7,7 @@ description: "Use when ending a work session to clean up loose ends, capture kno
 
 Session-end skill. Cleans up loose ends, captures knowledge through the 5 engineering disciplines, routes findings to persistence targets, and commits everything cleanly. Pairs with `/recon` — recon opens sessions, debrief closes them.
 
-**Always runs all 6 phases in order. Output each phase heading before executing it:**
+**Always emit all six phase headings, in order, before executing each phase** — they are lightweight process markers, not a content quota. On a quiet phase, one terse line under the heading is enough (e.g. `## Phase 1: ASSESS` → "clean, nothing to triage"); never pad a phase to fill it. The headings prove the process ran; the **Phase 6 report is the part that scales** to the session.
 
 ```
 ## Phase 1: ASSESS
@@ -24,7 +24,7 @@ Session-end skill. Cleans up loose ends, captures knowledge through the 5 engine
 [phase output]
 ```
 
-**This structure is mandatory.** Do not reorganize, rename, merge, or skip phases. Do not use custom section headings. Complete one phase before starting the next.
+**This structure is mandatory.** Do not reorganize, rename, merge, or skip phases — **except** Phases 1-3 when the double-debrief guard fires (below). Do not use custom section headings. Complete one phase before starting the next.
 
 **Double-debrief guard:** Before Phase 1, check `git log -1 --format=%s`. If the last commit message starts with `debrief:`, skip Phases 1-3 entirely (output "Phases 1-3 skipped — prior debrief detected") and jump straight to Phase 4.
 
@@ -32,7 +32,7 @@ Session-end skill. Cleans up loose ends, captures knowledge through the 5 engine
 |-------|------|--------|
 | 1 | ASSESS | Scan git status, git diff, TODOs/debug output in uncommitted changes. Categorize as: **Trivial** (formatting, debug cruft, staging) · **Substantive** (failing tests, lint errors) · **Deferred** (too big for session-end). |
 | 2 | TRIAGE | Trivial → auto-fix silently. Substantive → prompt user `(y/N)`, default defer. Deferred → log for next session. **Never modify logic, delete files, or alter public APIs without approval.** Present cleanup summary when done. |
-| 3 | COMMIT WORK | Auto-commit user's work + triage fixes. Match repo's commit style. If pre-commit hook fails → present error, ask user. If user declines → proceed with uncommitted changes, note in report. |
+| 3 | COMMIT WORK | Auto-commit user's work + triage fixes. Match repo's commit style. **Nothing to commit (workspace already clean) → skip the commit and proceed; never make an empty commit.** If pre-commit hook fails → present error, ask user. If user declines → proceed with uncommitted changes, note in report. |
 | 4 | DISCIPLINE AUDIT | Single pass across 5 disciplines + enhancement lenses. See below. |
 | 5 | ROUTE KNOWLEDGE | Write findings to correct targets. See routing table below. |
 | 6 | COMMIT & REPORT | Auto-commit debrief's doc/memory changes. Output terse action summary. |
@@ -133,9 +133,6 @@ If there are zero findings and zero triage actions, the entire report is 1-2 sen
 Otherwise, include only sections that have content:
 
 ```
-SESSION CONTEXT
-- [2-3 bullets of what the session was about]
-
 DEBRIEF ACTIONS
 Loose ends resolved:
 - [triage actions]
@@ -149,6 +146,9 @@ Deferred to next session:
 Commits:
 - [hash] "message" (user work)
 - [hash] "message" (debrief updates)
+
+SESSION CONTEXT (2-3 bullets max)
+- [what the session was about]
 ```
 
 ---
@@ -162,6 +162,7 @@ Commits:
 | Bloating CLAUDE.md | Append lines, don't restructure. Prefer memory files if CLAUDE.md is long. |
 | Duplicating knowledge | Read before writing. Already documented → skip. |
 | Committing with failing hooks | Present the error. Don't retry, don't skip hooks. |
+| Empty commit on a clean workspace | Nothing to commit → skip Phase 3's commit, proceed to Phase 4. |
 | Auto-fixing logic | Triage = trivial only. Logic changes need explicit approval. |
 | Creating orphan files | Use existing todo/task files. If none exist, use a `deferred.md` memory file. |
 | Massive diff (>500 lines) | Summarize by file. Phase 3: commit by area. Phase 4: audit from summaries. |

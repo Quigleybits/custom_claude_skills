@@ -7,3 +7,4 @@ Thumbs.db
 .ccb/
 __pycache__/
 *.pyc
+*.bak

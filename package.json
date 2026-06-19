@@ -1,7 +1,7 @@
 {
   "name": "@quigleybits/claude-skills",
-  "version": "0.1.0",
-  "description": "Custom Claude Code skills: recon, and more",
+  "version": "0.2.0",
+  "description": "Custom Claude Code skills: recon, debrief, and more",
   "author": "quigleyBits",
   "license": "MIT",
   "keywords": [
@@ -10,12 +10,16 @@
     "slash-commands",
     "ai-agents",
     "recon",
-    "project-reconnaissance"
+    "project-reconnaissance",
+    "debrief",
+    "session-management"
   ],
   "files": [
-    "skills/",
+    "skills/recon/",
+    "skills/debrief/",
     "scripts/link-skills.mjs",
     ".claude-plugin/",
+    "README.md",
     "LICENSE"
   ],
   "scripts": {

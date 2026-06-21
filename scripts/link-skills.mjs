@@ -8,7 +8,7 @@
  *   node scripts/link-skills.mjs --unlink # Remove symlinks
  *   node scripts/link-skills.mjs --quiet  # Suppress non-error output (for postinstall)
  */
-import { readdir, symlink, unlink, stat, readlink, mkdir } from 'node:fs/promises';
+import { readdir, symlink, unlink, stat, readlink, mkdir, rm } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { homedir } from 'node:os';
 
@@ -50,22 +50,29 @@ async function main() {
         log(`Skipped: ${dir.name} (not found)`);
       }
     } else {
-      try {
-        await stat(target);
-        // Check if it's already a symlink to us
-        try {
-          const linkTarget = await readlink(target);
-          if (resolve(linkTarget) === resolve(source)) {
+      let exists = false;
+      try { await stat(target); exists = true; } catch { /* not present — safe to link */ }
+
+      if (exists) {
+        let symlinkTarget = null;
+        try { symlinkTarget = await readlink(target); } catch { /* not a symlink */ }
+
+        if (symlinkTarget !== null) {
+          if (resolve(symlinkTarget) === resolve(source)) {
             log(`Already linked: ${dir.name}`);
             continue;
           }
-        } catch { /* not a symlink */ }
-        log(`Skipped: ${dir.name} (already exists — remove manually or use a different name)`);
-      } catch {
-        // Target doesn't exist, safe to link
-        await symlink(source, target, 'junction');
-        log(`Linked: ${dir.name} -> ${target}`);
+          log(`⚠ Skipped: ${dir.name} (symlink points elsewhere: ${symlinkTarget})`);
+          continue;
+        }
+        // Exists but is NOT a symlink — a stale plain-file copy. Replace it so the
+        // live skill tracks the repo; a stale copy silently runs old behaviour.
+        await rm(target, { recursive: true, force: true });
+        log(`Replaced stale copy: ${dir.name}`);
       }
+
+      await symlink(source, target, 'junction');
+      log(`Linked: ${dir.name} -> ${target}`);
     }
   }
 }

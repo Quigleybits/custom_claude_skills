@@ -1,6 +1,6 @@
 # Debrief Behavioral Eval (v2)
 
-Score: **P** (pass) / **F** (fail) / **-** (N/A). High-signal subset for quick runs: **5, 14, 15, 16, 23, 28**.
+Score: **P** (pass) / **F** (fail) / **-** (N/A). High-signal subset for quick runs: **5, 14, 15, 16, 23, 28, 38**.
 
 ## Phase Integrity
 | # | Eval | Pass criteria |
@@ -70,3 +70,8 @@ Score: **P** (pass) / **F** (fail) / **-** (N/A). High-signal subset for quick r
 | 35 | **Discipline-first scanning** | Used abstract discipline table as the search mechanism instead of concrete checklist. |
 | 36 | **Massive diff mishandled** | >500 lines and didn't summarize by file. |
 | 37 | **Skipped audit on no-code session** | Exploration session and Phase 4 was skipped. |
+
+## Commit Scope (added in 0.2.0)
+| # | Eval | Pass criteria |
+|---|------|--------------|
+| 38 | **Commit scope isolated** | Staged + committed ONLY this session's files via explicit pathspec (`git add <paths>` + `git commit -- <paths>`). Concurrent-session WIP left untouched. No `git add -A` / bare `git commit`. |

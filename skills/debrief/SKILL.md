@@ -37,7 +37,7 @@ Session-end skill. Cleans up loose ends, captures knowledge through the 5 engine
 | 5 | ROUTE KNOWLEDGE | Write findings to correct targets. See routing table below. |
 | 6 | COMMIT & REPORT | Auto-commit debrief's doc/memory changes. Output terse action summary. |
 
-**Two commits total:** user's work (Phase 3), debrief's changes (Phase 6).
+**Two commits total:** user's work (Phase 3), debrief's changes (Phase 6). **Stage and commit both by explicit pathspec** — `git add <paths>` then `git commit -- <paths>`; never `git add -A` or a bare `git commit`. A concurrent session may have unrelated WIP staged, and a bare commit captures the whole index.
 **Budget:** ≤30 tool calls total. Debrief runs late in sessions — context efficiency is critical.
 
 ---
@@ -163,6 +163,7 @@ SESSION CONTEXT (2-3 bullets max)
 | Duplicating knowledge | Read before writing. Already documented → skip. |
 | Committing with failing hooks | Present the error. Don't retry, don't skip hooks. |
 | Empty commit on a clean workspace | Nothing to commit → skip Phase 3's commit, proceed to Phase 4. |
+| Sweeping a concurrent session's WIP | Stage + commit explicit paths (`git commit -- <paths>`). Never `git add -A` or a bare `git commit` — another session may have files staged. |
 | Auto-fixing logic | Triage = trivial only. Logic changes need explicit approval. |
 | Creating orphan files | Use existing todo/task files. If none exist, use a `deferred.md` memory file. |
 | Massive diff (>500 lines) | Summarize by file. Phase 3: commit by area. Phase 4: audit from summaries. |

@@ -20,6 +20,7 @@
     "scripts/link-skills.mjs",
     ".claude-plugin/",
     "README.md",
+    "CHANGELOG.md",
     "LICENSE"
   ],
   "scripts": {

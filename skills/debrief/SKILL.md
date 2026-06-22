@@ -7,24 +7,9 @@ description: "Use when ending a work session to clean up loose ends, capture kno
 
 Session-end skill. Cleans up loose ends, captures knowledge through the 5 engineering disciplines, routes findings to persistence targets, and commits everything cleanly. Pairs with `/recon` — recon opens sessions, debrief closes them.
 
-**Always emit all six phase headings, in order, before executing each phase** — they are lightweight process markers, not a content quota. On a quiet phase, one terse line under the heading is enough (e.g. `## Phase 1: ASSESS` → "clean, nothing to triage"); never pad a phase to fill it. The headings prove the process ran; the **Phase 6 report is the part that scales** to the session.
+**Always run all 6 phases in order, completing each before the next.** No need to print phase-name headings as you go — just do each phase's work and end with the Phase 6 report.
 
-```
-## Phase 1: ASSESS
-[phase output]
-## Phase 2: TRIAGE
-[phase output]
-## Phase 3: COMMIT WORK
-[phase output]
-## Phase 4: DISCIPLINE AUDIT
-[phase output]
-## Phase 5: ROUTE KNOWLEDGE
-[phase output]
-## Phase 6: COMMIT & REPORT
-[phase output]
-```
-
-**This structure is mandatory.** Do not reorganize, rename, merge, or skip phases — **except** Phases 1-3 when the double-debrief guard fires (below). Do not use custom section headings. Complete one phase before starting the next.
+**The phase sequence is mandatory.** Do not reorganize, rename, merge, or skip phases — **except** Phases 1-3 when the double-debrief guard fires (below). Complete one phase before starting the next.
 
 **Double-debrief guard:** Before Phase 1, check `git log -1 --format=%s`. If the last commit message starts with `debrief:`, skip Phases 1-3 entirely (output "Phases 1-3 skipped — prior debrief detected") and jump straight to Phase 4.
 

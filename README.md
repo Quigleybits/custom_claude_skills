@@ -10,7 +10,9 @@ Custom skills (slash commands) for [Claude Code](https://claude.ai/claude-code).
 npm install -g @quigleybits/claude-skills
 ```
 
-Skills are automatically linked into `~/.claude/skills/` on install and cleanly removed on uninstall.
+Skills are automatically linked into `~/.claude/skills/` on install and cleanly removed on uninstall. The installer never deletes or overwrites an existing real skill directory; it reports the conflict and leaves the user's files untouched.
+
+> The non-destructive linker is currently on `master` and is scheduled for npm release `0.2.1`. Published version `0.2.0` predates this hardening; back up same-named local skill directories or wait for `0.2.1` before installing it.
 
 ## Skills
 
@@ -36,10 +38,20 @@ Session-end skill. Cleans up loose ends, captures knowledge through the 5 engine
 **What it does:**
 1. Assesses workspace for loose ends (uncommitted changes, TODOs, debug output)
 2. Triages and auto-fixes trivial issues, defers larger ones
-3. Commits user's work with a style-matched message
+3. Stages the user's work, blocks credential-like content with a redacting secret scan, then commits with a style-matched message
 4. Audits session against 5 engineering disciplines with enhancement lenses
 5. Routes findings to CLAUDE.md, memory files, or todo
 6. Commits debrief's documentation updates separately
+
+## Security checks
+
+```bash
+npm run check
+```
+
+This validates skill structure, runs the Node and Python regression suites, and scans every tracked file for sensitive filenames, private keys, provider tokens, credential URLs, suspicious secret assignments, and high-entropy values. Findings report only a path and rule name; matched values are never printed.
+
+Report vulnerabilities privately through [GitHub Security Advisories](https://github.com/Quigleybits/custom_claude_skills/security/advisories/new).
 
 ## Uninstall
 

@@ -4,6 +4,20 @@ Append-only. Newest entry on top.
 
 ---
 
+## 2026-06-27 — public-repository security hardening
+
+### Install convenience must not delete user-owned paths
+- The v0.2.0 linker fixed stale copies by recursively deleting any non-symlink target with a matching skill name. In an automatic `postinstall`, that converts a freshness problem into silent data loss.
+- **Rule:** package lifecycle scripts may create and remove their own links, but must refuse real files and directories. The earlier "replace stale copies" lesson below is superseded by this safer boundary.
+
+### Agent-managed commits need a credential gate
+- Explicit pathspec prevents unrelated-file capture but does not detect a credential inside an intended file.
+- **Rule:** stage exact paths, run a redacting secret scan over the staged index, and prohibit the commit on any nonzero result. Reuse the same scanner against the full index in CI.
+
+### Documentation skills should remain data-only
+- An editor `folderOpen` task made handover continuation feel automatic, but it crossed into workspace code execution and encouraged enabling automatic tasks.
+- **Rule:** the public handover skill writes a durable brief and leaves the session transition explicit. Do not add editor tasks or process launchers to recover two keystrokes.
+
 ## 2026-06-21 — shipping debrief v0.2.0 (release-engineering gotchas)
 
 ### CRLF silently breaks SKILL.md frontmatter validation

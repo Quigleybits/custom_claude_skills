@@ -14,6 +14,9 @@ docs/             # Project documentation
 ## Commands
 
 - `npm run validate` — Validate all SKILL.md files (frontmatter, naming, structure)
+- `npm test` — Run Node and Python security regression tests
+- `npm run security` — Scan all tracked files for credential-like content
+- `npm run check` — Run validation, tests, and the security scan
 - `npm run stats` — Word counts, token estimates, section counts for all skills
 - `npm run link` — Symlink skills into ~/.claude/skills/ for local testing
 - `npm run unlink` — Remove symlinks
@@ -26,7 +29,8 @@ docs/             # Project documentation
 3. Run `npm run link` to install locally for testing
 4. Test the skill with `/skill-name` in Claude Code
 5. Run `npm run stats` to check token budget
-6. Commit changes before and after each edit (preserve git history)
+6. Run `npm run check` before committing
+7. Commit changes before and after each edit (preserve git history)
 
 ## Skill Format Rules
 
@@ -39,4 +43,4 @@ docs/             # Project documentation
 
 - **recon** — Full-spectrum project reconnaissance and doc health audit
 - **debrief** — Session-end cleanup, discipline-aware knowledge capture, and documentation routing
-- **handover** — Hand the session to a fresh seeded `claude` (new window, zero-install via `CREATE_NEW_CONSOLE`) that auto-reads a curated brief and continues. Dev-only; publish deferred.
+- **handover** — Write a curated, redacted brief and report the explicit `/clear` then `/continue` move. Data-only and dev-only; publish deferred.

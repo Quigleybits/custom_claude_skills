@@ -53,21 +53,19 @@
 <body>
 <div class="wrap">
 
-  <h1><code>/handover</code> — design, research &amp; build</h1>
-  <p class="sub">Hand the current session off to a fresh one: compose a curated continuation brief, then auto-launch a new seeded <code>claude</code> that reads it and continues — no manual <code>/clear</code> + <code>/continue</code>.</p>
+  <h1><code>/handover</code> — secure continuation brief</h1>
+  <p class="sub">Hand the current session off safely: compose a curated continuation brief, save it atomically, then use the explicit <code>/clear</code> + <code>/continue</code> boundary.</p>
   <div class="badges">
     <span class="badge good">Built 2026-06-04</span>
-    <span class="badge good">Validated · 512 words</span>
-    <span class="badge good">Pilot ✓ end-to-end auto-launch</span>
-    <span class="badge good">No third-party terminal — CREATE_NEW_CONSOLE</span>
-    <span class="badge">Windows (zero-install)</span>
+    <span class="badge good">Hardened 2026-06-27</span>
+    <span class="badge good">Data-only</span>
+    <span class="badge good">No process launch</span>
+    <span class="badge">Cross-platform</span>
   </div>
 
   <h2>The idea in one line</h2>
   <div class="panel">
-    Compose the <b>curated brief</b>, then <b>launch a fresh <code>claude</code> seeded to read it and continue</b> —
-    in a <b>new console window</b> (<code>CREATE_NEW_CONSOLE</code>; opens as Windows Terminal on Win11). Non-destructive: the old session stays put.
-    Zero third-party tools — no WezTerm, no tmux, no Zellij, no CCB internals.
+    Compose a <b>curated, redacted brief</b>, save it before resetting, then let the user cross the session boundary explicitly. The skill never creates editor tasks or launches a process.
   </div>
 
   <h2>Flow</h2>
@@ -76,17 +74,13 @@
     <div class="arrow">▼</div>
     <div class="step"><span class="n">2</span><b>Atomic-write</b> → <code>./.ccb/history/&lt;utc&gt;-handover.md</code> &nbsp;(newest-wins)</div>
     <div class="arrow">▼</div>
-    <div class="step"><span class="n">3</span><b>Launch fresh session</b> → <code>handover_send.py</code></div>
-    <div class="branch">
-      <div class="step paned"><b>Windows</b><br><code>Popen([claude.exe, "&lt;seed&gt;"], CREATE_NEW_CONSOLE)</code> → <span class="yes">new console window auto-reads brief + continues</span></div>
-      <div class="step direct"><b>Other OS / fail</b><br>print <code>@path</code> + <span class="warn">"/clear then /continue"</span></div>
-    </div>
+    <div class="step"><span class="n">3</span><b>Report the explicit boundary</b> → <code>/clear</code>, then <code>/continue</code></div>
     <div class="arrow">▼</div>
-    <div class="step" style="border-left-color:var(--good)"><b>New session</b> reads the brief via <code>Read</code> and carries on from its <b>Next step</b> — the user types nothing.</div>
+    <div class="step" style="border-left-color:var(--good)"><b>Fresh session</b> attaches the newest brief and carries on from its <b>Next step</b>.</div>
   </div>
 
   <h2>Why build (the ecosystem verdict)</h2>
-  <p>A 4-scout + synthesis workflow (<code>wf_10b9d666-ab6</code>) read ~20 verified tools. <b>No perfect Windows drop-in exists.</b>
+  <p>A multi-source research pass read roughly twenty verified tools. <b>No perfect Windows drop-in exists.</b>
      Two live tools do both halves but are mac/Zellij-shaped; the rest only write a file or auto-inject-without-launch.</p>
   <table>
     <thead><tr><th>Tool</th><th>Fit</th><th>Both halves?</th><th>Windows snag</th></tr></thead>
@@ -103,36 +97,35 @@
   <h2>Key decisions</h2>
   <div class="panel">
     <ul>
-      <li><b>Seed a fresh session</b>, don't reuse <code>/continue</code> — <code>claude "&lt;seed&gt;"</code> tells the new session to Read the brief and continue. More reliable than <code>@file</code> auto-expansion.</li>
+      <li><b>Reuse <code>/continue</code></b> — one existing ingest path is easier to audit than a second launcher protocol.</li>
       <li><b>Never use <code>ctx-transfer</code></b> — it's a raw transcript dump, the exact thing to avoid.</li>
-      <li><b>Launch new, never self-reset</b> — continuation runs in a new window; the current session is untouched. Kills the self-reset paradox.</li>
-      <li><b>Atomic write before launch</b> — a failed launch still leaves a recoverable brief + the manual <code>@path</code>.</li>
-      <li><b>Zero-install, never breaks</b> — no third-party terminal; <code>CREATE_NEW_CONSOLE</code> gives <code>claude.exe</code> its own window. Catches all exceptions → manual fallback. Windows-only for now.</li>
+      <li><b>Keep the boundary explicit</b> — starting the fresh session remains a visible user action.</li>
+      <li><b>Atomic write before reset</b> — an interrupted reset still leaves a recoverable brief.</li>
+      <li><b>Remain data-only</b> — no editor configuration, process launch, shell parsing, or platform-specific fallback.</li>
     </ul>
     <h3>The findings that shaped it</h3>
-    <p class="sub">A skill <b>can't <code>/clear</code> its own REPL</b> → "automatic" needs an external driver, so launch a <b>new</b> session (works from any terminal) rather than depend on a CCB-registered pane. No terminal emulator needed: <code>subprocess.Popen([claude, seed], creationflags=CREATE_NEW_CONSOLE)</code> opens a console window (Windows Terminal on Win11). The seed is one argv element (no shell/<code>wt</code>/<code>cmd</code> parsing) → no quoting headaches. <i>(WezTerm was an early misstep — a niche install most users lack.)</i></p>
+    <p class="sub">Automatic continuation requires an external execution mechanism. Editor startup tasks and process launchers create security and portability costs that are unnecessary for a documentation workflow, so the public skill deliberately stops at the saved brief.</p>
   </div>
 
   <h2>Build &amp; verification</h2>
   <div class="kv">
-    <code>SKILL.md</code><span>3 steps: compose → atomic-save → launch fresh session</span>
-    <code>handover_send.py</code><span>spawn a fresh seeded <code>claude</code> in a new console window (<code>CREATE_NEW_CONSOLE</code>, no third-party terminal) that reads the brief + continues; else print <code>@path</code> + manual move. Never raises.</span>
+    <code>SKILL.md</code><span>3 steps: compose → atomic-save → report <code>/clear</code> then <code>/continue</code></span>
+    <code>security tests</code><span>assert that no executable launcher, automatic editor task, local user path, or internal workflow identifier is present</span>
   </div>
-  <h3>Pilot (auto-launch, full chain) — passed</h3>
-  <pre>Handover launched: a fresh `claude` (pid 7968) is opening in a new terminal window, reading the brief and continuing.
-@C:/Users/aidan/git_projects/_infrastructure/custom_claude_skills/.ccb/history/claude-pilot2.md</pre>
-  <p class="sub"><span class="yes">✓</span> <code>CREATE_NEW_CONSOLE</code> verified in isolation (harmless <code>cmd</code>) · seed behaviour proven via a WezTerm <code>get-text</code> harness (brief whose Next step was "print <code>HANDOVER PILOT OK</code> and stop" → spawned session <b>read the brief and printed it</b>) · shipped launcher spawned <code>claude.exe</code> in a new console (<code>tasklist</code> confirmed ~450 MB). py_compile · validate · exit 0. Test process killed + <code>.ccb/</code> removed.</p>
+  <h3>Expected output</h3>
+  <pre>Brief saved: C:/path/to/project/.ccb/history/claude-&lt;timestamp&gt;-handover.md
+Reliable move: /clear, then /continue</pre>
+  <p class="sub"><span class="yes">✓</span> Validation checks the skill format; security regression tests enforce the data-only boundary and metadata redaction.</p>
 
   <h2>Caveats &amp; follow-ups</h2>
   <ul>
-    <li><b>Windows-only auto-launch (no third-party terminal).</b> <code>CREATE_NEW_CONSOLE</code> works on any Windows machine, no install. Non-Windows → manual <code>@path</code> fallback; mac/Linux launch is the one remaining extension point.</li>
-    <li><b>Spawned-session permissions</b> — runs under the project's normal settings; <code>Read</code> auto-ran in the pilot, but a restrictive project may prompt once in the new window.</li>
+    <li><b>Explicit continuation.</b> The user runs <code>/clear</code> and <code>/continue</code>; the skill intentionally does not automate this boundary.</li>
     <li><code>.ccb/</code> must be gitignored wherever <code>/handover</code>/<code>/continue</code> run — added to this repo's <code>.gitignore</code>.</li>
-    <li><b>Windows-shaped defaults</b> — fallback <code>claude</code> path (<code>~/.local/bin/claude.exe</code>) + <code>py -3</code>. Generalise per-OS before any public release.</li>
+    <li><b>Redaction remains mandatory.</b> Briefs must not contain credentials, personal data, or raw conversation logs.</li>
   </ul>
 
   <div class="foot">
-    Research workflow <code>wf_10b9d666-ab6</code> · companion to <a href="./handover.md">handover.md</a> · skill: <a href="./SKILL.md">SKILL.md</a> + <a href="./handover_send.py">handover_send.py</a> · reference: <code>docs/handover-research/</code> (<code>claude-handoff-skill@1.0.0</code>, kept out of the skill dir). Author: Aidan (Quigleybits) + Claude.
+    Companion to <a href="./handover.md">handover.md</a> · skill: <a href="./SKILL.md">SKILL.md</a> · reference: <code>docs/handover-research/</code> (<code>claude-handoff-skill@1.0.0</code>, kept out of the skill dir). Maintained by Quigleybits.
   </div>
 
 </div>

@@ -25,7 +25,12 @@
   ],
   "scripts": {
     "eval": "node scripts/eval-skills.mjs",
+    "test:node": "node --test tests/security-hardening.test.mjs",
+    "test:python": "python -m unittest discover -s tests -p \"test_*.py\" -v",
+    "test": "npm run test:node && npm run test:python",
     "validate": "node scripts/validate-skills.mjs",
+    "security": "node skills/debrief/scan-secrets.mjs --all",
+    "check": "npm run validate && npm test && npm run security",
     "stats": "node scripts/skill-stats.mjs",
     "link": "node scripts/link-skills.mjs",
     "unlink": "node scripts/link-skills.mjs --unlink",

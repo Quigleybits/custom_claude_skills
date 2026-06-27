@@ -2,6 +2,15 @@
 
 All notable changes to `@quigleybits/claude-skills`. Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [Unreleased]
+
+### Security
+- `/debrief` now runs a bundled, redacting staged-secret scan immediately before both of its commits. A nonzero result blocks the commit.
+- The npm postinstall linker no longer deletes non-symlink skill directories; user-owned paths are reported and skipped.
+- The dev-only `/handover` skill is data-only. Obsolete process launchers and editor automatic-task behavior were removed.
+- Added pinned CI checks for skill validation, regression tests, and full-tree secret scanning.
+- Removed current machine-specific paths and internal workflow identifiers from handover documentation. Existing Git history is intentionally preserved.
+
 ## [0.2.0] — 2026-06-22
 
 ### Added

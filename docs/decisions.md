@@ -36,8 +36,16 @@ Design decisions and trade-off rules for the @quigleybits/claude-skills suite. C
 
 ### D5: npm package ships all skills together
 
-**Decision:** @quigleybits/claude-skills installs all skills at once via postinstall symlinks. No selective installation (yet).
+**Decision:** @quigleybits/claude-skills installs all published skills at once via postinstall symlinks. No selective installation (yet). The linker may create and remove its own symlinks, but it must never delete or overwrite an existing real path.
 
 **Why:** Simplicity for v1. The suite is designed as a coherent set (recon opens sessions, debrief closes them, roe defines engagement rules, etc.). Selective installation is on the backlog (todo.md) but not needed until the skill count grows beyond the initial 5.
 
 **Trade-off:** Users who only want one skill get all of them in ~/.claude/skills/. Token cost is negligible since skills load on-demand, but the directory gets cluttered.
+
+### D6: Handover is data-only
+
+**Decision:** `/handover` writes a redacted brief and reports `/clear` then `/continue`; it does not create editor tasks or launch a new process.
+
+**Why:** Automatic editor tasks and process launchers create code-execution, workspace-trust, portability, and auditability costs for a workflow whose durable output is only a Markdown brief.
+
+**Trade-off:** Continuation requires two explicit user commands. The visible security boundary is worth the small interaction cost.

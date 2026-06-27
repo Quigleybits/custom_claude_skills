@@ -9,9 +9,8 @@ argument-hint: "What the next session should focus on (optional)"
 ## Overview
 
 Curate the current session into a tight, dense handover **prompt** (not a transcript),
-save it where `/continue` already ingests it (`./.ccb/history/`, newest-wins), then move it
-into a fresh session — automatically when running under a CCB `claude` pane, or via a
-one-line next move in direct mode.
+save it where `/continue` already ingests it (`./.ccb/history/`, newest-wins), then tell the
+user the two-step move to continue in a fresh session.
 
 This is the *generate* half. `/continue` is the *ingest* half (it attaches the newest
 `./.ccb/history/*.md` via `@file`); this skill reuses it untouched. `ctx-transfer` is NOT
@@ -48,24 +47,23 @@ mkdir -p "$PWD/.ccb/history" && echo "TARGET: $(pwd -W)/.ccb/history/claude-$(da
 Then write the composed doc to that exact `TARGET` path using the **Write tool**.
 Write the file before any reset — never reset first (atomic-save discipline).
 
-## Step 3 — Launch the fresh session (MANDATORY)
+## Step 3 — Report the reliable next move (MANDATORY)
 
-```bash
-py -3 "C:/Users/aidan/.claude/skills/handover/handover_send.py"
-```
+For security, this skill does not create editor tasks or launch processes. After the brief is
+written, print the saved path and the two-step move, verbatim:
 
-This launches a **new** `claude`, pre-seeded to read the brief and continue — the user types
-nothing (no `/clear`, no `/continue`). The current session is left intact (non-destructive).
+> Brief saved: `<TARGET>`
+>
+> **Reliable move — in this terminal:**
+> 1. `/clear`
+> 2. `/continue`
 
-- **Windows** (no third-party terminal needed): spawns `claude.exe` in a **new console window**
-  via `CREATE_NEW_CONSOLE`, seeded with "read `<brief>` and continue from its Next step".
-  `claude "<prompt>"` auto-runs the seed on boot. On Win11 that console opens as Windows Terminal
-  (the default handler); on older Windows, a classic console.
-- **Other OS / launch fails**: prints `@<path>` + the manual next move. The script never raises;
-  any failure degrades to this message, so /handover always finishes cleanly.
+`/continue` attaches the newest `./.ccb/history/*.md` (the brief just written) via `@file`, so the
+fresh session resumes with full context. The current session stays intact until the user clears it.
+
+If the user instead wants a **separate** window (keeping this session open), give them the brief
+path to paste into any fresh `claude`: `@<TARGET>`.
 
 ## Output
 
-After Step 3, report exactly what the script printed: the saved brief path, and either
-"launched a fresh `claude` in a new window, already continuing" or — on the manual fallback —
-the two-key next move (`/clear`, then `/continue`).
+Report the saved brief path and the reliable two-step move: `/clear`, then `/continue`.

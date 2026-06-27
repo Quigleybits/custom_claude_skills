@@ -17,12 +17,21 @@ Session-end skill. Cleans up loose ends, captures knowledge through the 5 engine
 |-------|------|--------|
 | 1 | ASSESS | Scan git status, git diff, TODOs/debug output in uncommitted changes. Categorize as: **Trivial** (formatting, debug cruft, staging) · **Substantive** (failing tests, lint errors) · **Deferred** (too big for session-end). |
 | 2 | TRIAGE | Trivial → auto-fix silently. Substantive → prompt user `(y/N)`, default defer. Deferred → log for next session. **Never modify logic, delete files, or alter public APIs without approval.** Present cleanup summary when done. |
-| 3 | COMMIT WORK | Auto-commit user's work + triage fixes. Match repo's commit style. **Nothing to commit (workspace already clean) → skip the commit and proceed; never make an empty commit.** If pre-commit hook fails → present error, ask user. If user declines → proceed with uncommitted changes, note in report. |
+| 3 | COMMIT WORK | Stage the user's work + triage fixes by explicit path, run the mandatory staged-secret scan, then commit. **Nothing to commit (workspace already clean) → skip the commit and proceed; never make an empty commit.** A failed secret scan prohibits the commit. If a pre-commit hook fails → present error, ask user. If user declines → proceed with uncommitted changes, note in report. |
 | 4 | DISCIPLINE AUDIT | Single pass across 5 disciplines + enhancement lenses. See below. |
 | 5 | ROUTE KNOWLEDGE | Write findings to correct targets. See routing table below. |
 | 6 | COMMIT & REPORT | Auto-commit debrief's doc/memory changes. Output terse action summary. |
 
 **Two commits total:** user's work (Phase 3), debrief's changes (Phase 6). **Stage and commit both by explicit pathspec** — `git add <paths>` then `git commit -- <paths>`; never `git add -A` or a bare `git commit`. A concurrent session may have unrelated WIP staged, and a bare commit captures the whole index.
+
+**Mandatory secret gate:** after staging the explicit paths and immediately before **each** commit, run:
+
+```bash
+node "$HOME/.claude/skills/debrief/scan-secrets.mjs"
+```
+
+Exit `0` permits the commit. Any other exit blocks it: report only the scanner's redacted path/rule findings, ask the user to remove the secret or explicitly review a false positive, and do not bypass the scanner. A reviewed public value may carry `secret-scan: allow` on that line.
+
 **Budget:** ≤30 tool calls total. Debrief runs late in sessions — context efficiency is critical.
 
 ---
@@ -98,7 +107,7 @@ Route by **durability** — how the finding persists, not what category it fits:
 
 ## Phase 6: Commit & Report
 
-**Commit** debrief's doc/memory changes (triage fixes already committed in Phase 3):
+Stage debrief's doc/memory changes by explicit path, run the mandatory staged-secret scan again, then **commit** (triage fixes were already committed in Phase 3):
 
 ```
 debrief: session wrap-up
@@ -149,6 +158,7 @@ SESSION CONTEXT (2-3 bullets max)
 | Committing with failing hooks | Present the error. Don't retry, don't skip hooks. |
 | Empty commit on a clean workspace | Nothing to commit → skip Phase 3's commit, proceed to Phase 4. |
 | Sweeping a concurrent session's WIP | Stage + commit explicit paths (`git commit -- <paths>`). Never `git add -A` or a bare `git commit` — another session may have files staged. |
+| Committing without a secret scan | Run `scan-secrets.mjs` after staging and immediately before both commits. Any nonzero exit prohibits the commit. |
 | Auto-fixing logic | Triage = trivial only. Logic changes need explicit approval. |
 | Creating orphan files | Use existing todo/task files. If none exist, use a `deferred.md` memory file. |
 | Massive diff (>500 lines) | Summarize by file. Phase 3: commit by area. Phase 4: audit from summaries. |

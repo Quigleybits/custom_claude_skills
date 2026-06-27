@@ -8,12 +8,14 @@
  *   node scripts/link-skills.mjs --unlink # Remove symlinks
  *   node scripts/link-skills.mjs --quiet  # Suppress non-error output (for postinstall)
  */
-import { readdir, symlink, unlink, stat, readlink, mkdir, rm } from 'node:fs/promises';
-import { join, resolve } from 'node:path';
+import { readdir, symlink, unlink, lstat, readlink, mkdir } from 'node:fs/promises';
+import { dirname, join, resolve } from 'node:path';
 import { homedir } from 'node:os';
 
 const SKILLS_DIR = resolve(import.meta.dirname, '..', 'skills');
-const CLAUDE_SKILLS = join(homedir(), '.claude', 'skills');
+const CLAUDE_SKILLS = resolve(
+  process.env.CLAUDE_SKILLS_DIR || join(homedir(), '.claude', 'skills'),
+);
 const isUnlink = process.argv.includes('--unlink');
 const isQuiet = process.argv.includes('--quiet');
 
@@ -51,27 +53,28 @@ async function main() {
       }
     } else {
       let exists = false;
-      try { await stat(target); exists = true; } catch { /* not present — safe to link */ }
+      try { await lstat(target); exists = true; } catch { /* not present — safe to link */ }
 
       if (exists) {
         let symlinkTarget = null;
         try { symlinkTarget = await readlink(target); } catch { /* not a symlink */ }
 
         if (symlinkTarget !== null) {
-          if (resolve(symlinkTarget) === resolve(source)) {
+          const resolvedLinkTarget = resolve(dirname(target), symlinkTarget);
+          if (resolvedLinkTarget === resolve(source)) {
             log(`Already linked: ${dir.name}`);
             continue;
           }
           log(`⚠ Skipped: ${dir.name} (symlink points elsewhere: ${symlinkTarget})`);
           continue;
         }
-        // Exists but is NOT a symlink — a stale plain-file copy. Replace it so the
-        // live skill tracks the repo; a stale copy silently runs old behaviour.
-        await rm(target, { recursive: true, force: true });
-        log(`Replaced stale copy: ${dir.name}`);
+        // A real file or directory belongs to the user. Postinstall must never
+        // delete it silently; replacing it requires an explicit manual decision.
+        log(`⚠ Skipped: ${dir.name} (existing path is not a symlink)`);
+        continue;
       }
 
-      await symlink(source, target, 'junction');
+      await symlink(source, target, process.platform === 'win32' ? 'junction' : 'dir');
       log(`Linked: ${dir.name} -> ${target}`);
     }
   }

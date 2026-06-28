@@ -12,8 +12,6 @@ npm install -g @quigleybits/claude-skills
 
 Skills are automatically linked into `~/.claude/skills/` on install and cleanly removed on uninstall. The installer never deletes or overwrites an existing real skill directory; it reports the conflict and leaves the user's files untouched.
 
-> The non-destructive linker is currently on `master` and is scheduled for npm release `0.2.1`. Published version `0.2.0` predates this hardening; back up same-named local skill directories or wait for `0.2.1` before installing it.
-
 ## Skills
 
 ### /recon

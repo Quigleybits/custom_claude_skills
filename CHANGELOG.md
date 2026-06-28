@@ -4,6 +4,8 @@ All notable changes to `@quigleybits/claude-skills`. Format loosely follows [Kee
 
 ## [Unreleased]
 
+## [0.2.1] — 2026-06-28
+
 ### Security
 - `/debrief` now runs a bundled, redacting staged-secret scan immediately before both of its commits. A nonzero result blocks the commit.
 - The npm postinstall linker no longer deletes non-symlink skill directories; user-owned paths are reported and skipped.

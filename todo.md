@@ -2,7 +2,6 @@
 
 ## Soon
 - [ ] Retest updated `/debrief` on real project — include staged-secret gate; use `skills/debrief/behavioral-eval.md` v2 (39 criteria)
-- [ ] Publish @quigleybits/claude-skills@0.2.1 security release after explicit release approval
 - [ ] Build `/roe` skill — rules of engagement, delegation boundary mapper + domain-specific failure patterns (see `docs/skill-ideas.md`)
 - [ ] Recon v0.2 — fold in intent completeness checking + context fragmentation detection
 - [ ] Build `/zero` skill — zero the harness, holistic Claude Code setup health check
@@ -17,6 +16,7 @@
 - [ ] Selective skill installer CLI (`npx @quigleybits/claude-skills install recon`) — lets users pick individual skills instead of installing all
 
 ## Done
+- [x] Publish @quigleybits/claude-skills@0.2.1 security release (2026-06-28)
 - [x] Harden public repository (2026-06-27) — secret-scanning CI, staged `/debrief` gate, non-destructive postinstall linking, data-only handover, and GitHub protection settings.
 - [x] Build `/handover` skill (2026-06-04; security redesign 2026-06-27) — curated continuation brief → `./.ccb/history/` (newest-wins) → explicit `/clear` + `/continue`. No process launch, editor task, or raw transcript. Writeup: `skills/handover/handover.md`. Publish decision deferred (see Soon).
 - [x] Debrief v1 tested + 7 optimizations applied (2026-03-26) — concrete checklist, conditional lenses, durability routing, tool call budget, lint fallback, todo fallback, MEMORY.md bootstrap. Behavioral eval v2 (39 criteria).
